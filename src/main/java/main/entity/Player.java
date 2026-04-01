@@ -9,29 +9,28 @@ import java.awt.Graphics;
 public final class Player {
 
     private static final Color COLOR = Color.RED;
-    private static final float ACCELERATION = 0.2f; // pixels per frame per input
-    private static final float MAX_SPEED = 4f;       // max pixels per frame
-    private static final float FRICTION = 0.85f;    // slows player naturally
+    private static final float ACCELERATION = 0.2f;
+    private static final float MAX_SPEED = 4f;
+    private static final float FRICTION = 0.85f;
 
-    private float x; // continuous position in pixels
-    private float y;
-
-    private float vx;
-    private float vy;
-
+    private float x, y; // continuous position in pixels
+    private float vx, vy;
     private final int tileSize;
+    private final int width, height; // player size in pixels
 
     public Player(final int startX, final int startY, final int tileSize) {
         this.tileSize = tileSize;
+        this.width = tileSize;  // can change to different size if needed
+        this.height = tileSize;
+
         this.x = startX * tileSize;
         this.y = startY * tileSize;
         this.vx = 0;
         this.vy = 0;
     }
 
-    // Called every frame
+    // Update player movement
     public void update(boolean up, boolean down, boolean left, boolean right) {
-        // Input acceleration
         if (up) vy -= ACCELERATION;
         if (down) vy += ACCELERATION;
         if (left) vx -= ACCELERATION;
@@ -47,7 +46,7 @@ public final class Player {
         vx *= FRICTION;
         vy *= FRICTION;
 
-        // Predict new position
+        // Predict new positions
         float nextX = x + vx;
         float nextY = y + vy;
 
@@ -55,49 +54,53 @@ public final class Player {
         int gridWidth = grid[0].length;
         int gridHeight = grid.length;
 
-        // Collision check on X
+        // --- X collision ---
         int tileLeft = (int)(nextX / tileSize);
-        int tileRight = (int)((nextX + tileSize - 1) / tileSize);
+        int tileRight = (int)((nextX + width - 1) / tileSize);
         int tileTop = (int)(y / tileSize);
-        int tileBottom = (int)((y + tileSize - 1) / tileSize);
+        int tileBottom = (int)((y + height - 1) / tileSize);
 
-        if (tileLeft >= 0 && tileRight < gridWidth &&
-            tileTop >= 0 && tileBottom < gridHeight) {
-            if (grid[tileTop][tileLeft].isActive() && grid[tileTop][tileRight].isActive() &&
-                grid[tileBottom][tileLeft].isActive() && grid[tileBottom][tileRight].isActive()) {
-                x = nextX;
-            } else {
-                vx = 0; // stop horizontal movement on collision
-            }
+        if (tileLeft < 0 || tileRight >= gridWidth) {
+            vx = 0;
+        } else if (grid[tileTop][tileLeft].isActive() && grid[tileTop][tileRight].isActive() &&
+                   grid[tileBottom][tileLeft].isActive() && grid[tileBottom][tileRight].isActive()) {
+            x = nextX;
+        } else {
+            vx = 0;
         }
 
-        // Collision check on Y
+        // --- Y collision ---
         tileLeft = (int)(x / tileSize);
-        tileRight = (int)((x + tileSize - 1) / tileSize);
+        tileRight = (int)((x + width - 1) / tileSize);
         tileTop = (int)(nextY / tileSize);
-        tileBottom = (int)((nextY + tileSize - 1) / tileSize);
+        tileBottom = (int)((nextY + height - 1) / tileSize);
 
-        if (tileLeft >= 0 && tileRight < gridWidth &&
-            tileTop >= 0 && tileBottom < gridHeight) {
-            if (grid[tileTop][tileLeft].isActive() && grid[tileTop][tileRight].isActive() &&
-                grid[tileBottom][tileLeft].isActive() && grid[tileBottom][tileRight].isActive()) {
-                y = nextY;
-            } else {
-                vy = 0; // stop vertical movement on collision
-            }
+        if (tileTop < 0 || tileBottom >= gridHeight) {
+            vy = 0;
+        } else if (grid[tileTop][tileLeft].isActive() && grid[tileTop][tileRight].isActive() &&
+                   grid[tileBottom][tileLeft].isActive() && grid[tileBottom][tileRight].isActive()) {
+            y = nextY;
+        } else {
+            vy = 0;
         }
     }
 
+    // Continuous coordinates
     public float getX() { return x; }
     public float getY() { return y; }
 
+    // Tile indices (center of player)
+    public int getTileX() { return (int)((x + width / 2f) / tileSize); }
+    public int getTileY() { return (int)((y + height / 2f) / tileSize); }
+
+    // Render player
     public void render(Graphics g, int tileSize, int offsetX, int offsetY) {
         g.setColor(COLOR);
         g.fillOval(
             Math.round(x) - offsetX,
             Math.round(y) - offsetY,
-            tileSize,
-            tileSize
+            width,
+            height
         );
     }
 }
