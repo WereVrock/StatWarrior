@@ -3,49 +3,101 @@ package entity;
 import dungeon.DungeonCell;
 import main.Main;
 
-import java.awt.Graphics;
 import java.awt.Color;
+import java.awt.Graphics;
 
 public final class Player {
 
     private static final Color COLOR = Color.RED;
+    private static final float ACCELERATION = 0.2f; // pixels per frame per input
+    private static final float MAX_SPEED = 4f;       // max pixels per frame
+    private static final float FRICTION = 0.85f;    // slows player naturally
 
-    private int x; // grid x
-    private int y; // grid y
+    private float x; // continuous position in pixels
+    private float y;
 
-    public Player(final int startX, final int startY) {
-        this.x = startX;
-        this.y = startY;
+    private float vx;
+    private float vy;
+
+    private final int tileSize;
+
+    public Player(final int startX, final int startY, final int tileSize) {
+        this.tileSize = tileSize;
+        this.x = startX * tileSize;
+        this.y = startY * tileSize;
+        this.vx = 0;
+        this.vy = 0;
     }
 
-    public int getX() {
-        return x;
-    }
+    // Called every frame
+    public void update(boolean up, boolean down, boolean left, boolean right) {
+        // Input acceleration
+        if (up) vy -= ACCELERATION;
+        if (down) vy += ACCELERATION;
+        if (left) vx -= ACCELERATION;
+        if (right) vx += ACCELERATION;
 
-    public int getY() {
-        return y;
-    }
+        // Clamp velocity
+        if (vx > MAX_SPEED) vx = MAX_SPEED;
+        if (vx < -MAX_SPEED) vx = -MAX_SPEED;
+        if (vy > MAX_SPEED) vy = MAX_SPEED;
+        if (vy < -MAX_SPEED) vy = -MAX_SPEED;
 
-    public void move(final int dx, final int dy) {
+        // Apply friction
+        vx *= FRICTION;
+        vy *= FRICTION;
+
+        // Predict new position
+        float nextX = x + vx;
+        float nextY = y + vy;
+
         final DungeonCell[][] grid = Main.DUNGEON.getGrid();
-        final int newX = x + dx;
-        final int newY = y + dy;
+        int gridWidth = grid[0].length;
+        int gridHeight = grid.length;
 
-        if (newY >= 0 && newY < grid.length &&
-            newX >= 0 && newX < grid[0].length &&
-            grid[newY][newX].isActive()) {
-            x = newX;
-            y = newY;
+        // Collision check on X
+        int tileLeft = (int)(nextX / tileSize);
+        int tileRight = (int)((nextX + tileSize - 1) / tileSize);
+        int tileTop = (int)(y / tileSize);
+        int tileBottom = (int)((y + tileSize - 1) / tileSize);
+
+        if (tileLeft >= 0 && tileRight < gridWidth &&
+            tileTop >= 0 && tileBottom < gridHeight) {
+            if (grid[tileTop][tileLeft].isActive() && grid[tileTop][tileRight].isActive() &&
+                grid[tileBottom][tileLeft].isActive() && grid[tileBottom][tileRight].isActive()) {
+                x = nextX;
+            } else {
+                vx = 0; // stop horizontal movement on collision
+            }
+        }
+
+        // Collision check on Y
+        tileLeft = (int)(x / tileSize);
+        tileRight = (int)((x + tileSize - 1) / tileSize);
+        tileTop = (int)(nextY / tileSize);
+        tileBottom = (int)((nextY + tileSize - 1) / tileSize);
+
+        if (tileLeft >= 0 && tileRight < gridWidth &&
+            tileTop >= 0 && tileBottom < gridHeight) {
+            if (grid[tileTop][tileLeft].isActive() && grid[tileTop][tileRight].isActive() &&
+                grid[tileBottom][tileLeft].isActive() && grid[tileBottom][tileRight].isActive()) {
+                y = nextY;
+            } else {
+                vy = 0; // stop vertical movement on collision
+            }
         }
     }
 
-    public void render(final Graphics g, final int tileSize, final int offsetX, final int offsetY) {
+    public float getX() { return x; }
+    public float getY() { return y; }
+
+    public void render(Graphics g, int tileSize, int offsetX, int offsetY) {
         g.setColor(COLOR);
         g.fillOval(
-                x * tileSize - offsetX,
-                y * tileSize - offsetY,
-                tileSize,
-                tileSize
+            Math.round(x) - offsetX,
+            Math.round(y) - offsetY,
+            tileSize,
+            tileSize
         );
     }
 }

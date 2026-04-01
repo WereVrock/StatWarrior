@@ -8,33 +8,26 @@ public final class Camera {
     private final int screenHeight;
     private final int tileSize;
 
-    private int offsetX;
-    private int offsetY;
+    private float offsetX;
+    private float offsetY;
+
+    private static final float LERP = 0.1f; // smoothing factor
 
     public Camera(final int screenWidth, final int screenHeight, final int tileSize) {
         this.screenWidth = screenWidth;
         this.screenHeight = screenHeight;
         this.tileSize = tileSize;
-        this.offsetX = 0;
-        this.offsetY = 0;
     }
 
-    public void update(final Player player) {
-        final int playerPixelX = player.getX() * tileSize;
-        final int playerPixelY = player.getY() * tileSize;
+    public void update(Player player) {
+        float targetX = player.getX() - screenWidth / 2f + tileSize / 2f;
+        float targetY = player.getY() - screenHeight / 2f + tileSize / 2f;
 
-        offsetX = playerPixelX - screenWidth / 2 + tileSize / 2;
-        offsetY = playerPixelY - screenHeight / 2 + tileSize / 2;
-
-        if (offsetX < 0) offsetX = 0;
-        if (offsetY < 0) offsetY = 0;
+        // Smoothly interpolate
+        offsetX += (targetX - offsetX) * LERP;
+        offsetY += (targetY - offsetY) * LERP;
     }
 
-    public int getOffsetX() {
-        return offsetX;
-    }
-
-    public int getOffsetY() {
-        return offsetY;
-    }
+    public int getOffsetX() { return Math.round(offsetX); }
+    public int getOffsetY() { return Math.round(offsetY); }
 }

@@ -5,46 +5,62 @@ import entity.Player;
 import main.Main;
 
 import javax.swing.JPanel;
-import java.awt.Color;
-import java.awt.Graphics;
-import java.awt.event.KeyAdapter;
-import java.awt.event.KeyEvent;
+import java.awt.*;
+import java.awt.event.*;
+import java.util.HashSet;
+import java.util.Set;
 
-public final class GamePanel extends JPanel {
+public final class GamePanel extends JPanel implements Runnable {
 
     private static final int TILE_SIZE = 32;
     private static final int SCREEN_WIDTH = 800;
     private static final int SCREEN_HEIGHT = 600;
+    private static final int FPS = 60;
 
     private final Player player;
     private final Camera camera;
 
+    private final Set<Integer> keys = new HashSet<>();
+
     public GamePanel() {
         setFocusable(true);
         setDoubleBuffered(true);
+        setPreferredSize(new Dimension(SCREEN_WIDTH, SCREEN_HEIGHT));
 
-        player = new Player(SCREEN_WIDTH / TILE_SIZE / 2, SCREEN_HEIGHT / TILE_SIZE / 2);
+        final DungeonCell[][] grid = Main.DUNGEON.getGrid();
+        player = new Player(grid[0].length / 2, grid.length / 2, TILE_SIZE);
         camera = new Camera(SCREEN_WIDTH, SCREEN_HEIGHT, TILE_SIZE);
 
         addKeyListener(new KeyAdapter() {
             @Override
-            public void keyPressed(final KeyEvent e) {
-                switch (e.getKeyCode()) {
-                    case KeyEvent.VK_W -> player.move(0, -1);
-                    case KeyEvent.VK_S -> player.move(0, 1);
-                    case KeyEvent.VK_A -> player.move(-1, 0);
-                    case KeyEvent.VK_D -> player.move(1, 0);
-                }
-                camera.update(player);
-                repaint();
-            }
+            public void keyPressed(KeyEvent e) { keys.add(e.getKeyCode()); }
+            @Override
+            public void keyReleased(KeyEvent e) { keys.remove(e.getKeyCode()); }
         });
 
-        camera.update(player);
+        new Thread(this).start();
     }
 
     @Override
-    protected void paintComponent(final Graphics g) {
+    public void run() {
+        long delay = 1000 / FPS;
+        while (true) {
+            boolean up = keys.contains(KeyEvent.VK_W);
+            boolean down = keys.contains(KeyEvent.VK_S);
+            boolean left = keys.contains(KeyEvent.VK_A);
+            boolean right = keys.contains(KeyEvent.VK_D);
+
+            player.update(up, down, left, right);
+            camera.update(player);
+
+            repaint();
+
+            try { Thread.sleep(delay); } catch (InterruptedException ignored) {}
+        }
+    }
+
+    @Override
+    protected void paintComponent(Graphics g) {
         super.paintComponent(g);
 
         final DungeonCell[][] grid = Main.DUNGEON.getGrid();
@@ -56,10 +72,10 @@ public final class GamePanel extends JPanel {
                 final DungeonCell cell = grid[y][x];
                 g.setColor(cell.isActive() ? Color.WHITE : Color.DARK_GRAY);
                 g.fillRect(
-                        x * TILE_SIZE - offsetX,
-                        y * TILE_SIZE - offsetY,
-                        TILE_SIZE,
-                        TILE_SIZE
+                    x * TILE_SIZE - offsetX,
+                    y * TILE_SIZE - offsetY,
+                    TILE_SIZE,
+                    TILE_SIZE
                 );
             }
         }
