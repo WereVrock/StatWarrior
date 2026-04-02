@@ -76,7 +76,7 @@ public final class Player {
         tileLeft = (int)(x / tileSize);
         tileRight = (int)((x + width - 1) / tileSize);
         tileTop = (int)(nextY / tileSize);
-        tileBottom = (int)((nextY + height - 1) / tileSize);
+        tileBottom = (int)((y + height - 1) / tileSize);
 
         if (tileTop < 0 || tileBottom >= gridHeight) {
             vy = 0;
@@ -88,13 +88,19 @@ public final class Player {
         }
     }
 
+    public void render(Graphics g) {
+        final int offsetX = Main.CAMERA.getOffsetX();
+        final int offsetY = Main.CAMERA.getOffsetY();
+
+        g.setColor(COLOR);
+        g.fillOval(
+                Math.round(x) - offsetX,
+                Math.round(y) - offsetY,
+                width,
+                height
+        );
+    }
+
     public float getX() { return x; }
     public float getY() { return y; }
-    public int getTileX() { return (int)((x + width / 2f) / tileSize); }
-    public int getTileY() { return (int)((y + height / 2f) / tileSize); }
-
-    public void render(Graphics g, int tileSize, int offsetX, int offsetY) {
-        g.setColor(COLOR);
-        g.fillOval(Math.round(x) - offsetX, Math.round(y) - offsetY, width, height);
-    }
 }

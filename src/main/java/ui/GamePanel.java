@@ -1,15 +1,12 @@
 package ui;
 
 import controls.HybridController;
-import dungeon.DungeonCell;
 import main.Main;
 
 import javax.swing.*;
 import java.awt.*;
 
 public final class GamePanel extends JPanel {
-
-    private static final int TILE_SIZE = 32;
 
     public GamePanel() {
         setFocusable(true);
@@ -25,24 +22,8 @@ public final class GamePanel extends JPanel {
     protected void paintComponent(Graphics g) {
         super.paintComponent(g);
 
-        final DungeonCell[][] grid = Main.DUNGEON.getGrid();
-        final int offsetX = Main.CAMERA.getOffsetX();
-        final int offsetY = Main.CAMERA.getOffsetY();
-
-        for (int y = 0; y < grid.length; y++) {
-            for (int x = 0; x < grid[y].length; x++) {
-                final DungeonCell cell = grid[y][x];
-
-                g.setColor(cell.isActive() ? Color.WHITE : Color.DARK_GRAY);
-                g.fillRect(
-                        x * TILE_SIZE - offsetX,
-                        y * TILE_SIZE - offsetY,
-                        TILE_SIZE,
-                        TILE_SIZE
-                );
-            }
-        }
-
-        Main.PLAYER.render(g, TILE_SIZE, offsetX, offsetY);
+        // 🔥 Just dispatch rendering
+        Main.DUNGEON.render(g);
+        Main.PLAYER.render(g);
     }
 }
