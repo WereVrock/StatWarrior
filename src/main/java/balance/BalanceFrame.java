@@ -38,11 +38,18 @@ public final class BalanceFrame extends JFrame {
         refreshFields();
 
         applyButton.addActionListener(this::applyChanges);
-        saveButton.addActionListener(e -> Balance.save());
+
+        saveButton.addActionListener(e -> {
+            if (applyChangesSafe()) {
+                Balance.save();
+            }
+        });
+
         loadButton.addActionListener(e -> {
             Balance.load();
             refreshFields();
         });
+
         revertButton.addActionListener(e -> {
             Balance.revert();
             refreshFields();
@@ -52,12 +59,18 @@ public final class BalanceFrame extends JFrame {
     }
 
     private void applyChanges(ActionEvent e) {
+        applyChangesSafe();
+    }
+
+    private boolean applyChangesSafe() {
         try {
             Balance.PLAYER_ACCELERATION = Float.parseFloat(accelerationField.getText());
             Balance.PLAYER_MAX_SPEED = Float.parseFloat(maxSpeedField.getText());
             Balance.PLAYER_FRICTION = Float.parseFloat(frictionField.getText());
+            return true;
         } catch (Exception ex) {
             JOptionPane.showMessageDialog(this, "Invalid input");
+            return false;
         }
     }
 
