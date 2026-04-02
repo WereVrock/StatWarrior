@@ -24,7 +24,6 @@ public final class GamepadController implements InputController {
     @Override
     public void update() {
         MANAGER.update(); // 🔥 REQUIRED in this version
-
         state = MANAGER.getState(index); // 🔥 correct API
     }
 
@@ -42,12 +41,14 @@ public final class GamepadController implements InputController {
 
     @Override
     public boolean isUpPressed() {
-        return state != null && applyDeadzone(state.leftStickY) < -0.5f;
+        // 🔁 inverted
+        return state != null && applyDeadzone(state.leftStickY) > 0.5f;
     }
 
     @Override
     public boolean isDownPressed() {
-        return state != null && applyDeadzone(state.leftStickY) > 0.5f;
+        // 🔁 inverted
+        return state != null && applyDeadzone(state.leftStickY) < -0.5f;
     }
 
     @Override
