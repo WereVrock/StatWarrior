@@ -9,37 +9,41 @@ import ui.GameFrame;
 
 public final class Main {
 
+    public static final Dungeon DUNGEON = new Dungeon();
 
-public static final Dungeon DUNGEON = new Dungeon();
+    public static final InputController CONTROLLER = new HybridController();
 
-// 🔥 zero setup logic
-public static final InputController CONTROLLER = new HybridController();
+    public static final Player PLAYER;
+    public static final Camera CAMERA;
 
-public static final Player PLAYER;
-public static final Camera CAMERA;
+    // 🔥 NEW
+    public static GameFrame FRAME;
+    public static final GameLoop LOOP = new GameLoop();
 
-static {
-    final int tileSize = 32;
-    final int screenWidth = 800;
-    final int screenHeight = 600;
+    static {
+        final int tileSize = 32;
+        final int screenWidth = 800;
+        final int screenHeight = 600;
 
-    final var grid = DUNGEON.getGrid();
+        final var grid = DUNGEON.getGrid();
 
-    PLAYER = new Player(
-            grid[0].length / 2,
-            grid.length / 2,
-            tileSize,
-            CONTROLLER
-    );
+        PLAYER = new Player(
+                grid[0].length / 2,
+                grid.length / 2,
+                tileSize,
+                CONTROLLER
+        );
 
-    CAMERA = new Camera(screenWidth, screenHeight, tileSize);
-}
+        CAMERA = new Camera(screenWidth, screenHeight, tileSize);
+    }
 
-private Main() {}
+    private Main() {}
 
-public static void main(final String[] args) {
-    new GameFrame();
-}
- 
+    public static void main(final String[] args) {
 
+        FRAME = new GameFrame();
+
+        // 🔥 start loop AFTER UI exists
+        LOOP.start();
+    }
 }
