@@ -41,17 +41,17 @@ public final class BalanceFrame extends JFrame {
 
         saveButton.addActionListener(e -> {
             if (applyChangesSafe()) {
-                Balance.save();
+                BalanceStorage.save(Balance.class, Balance.SAVE_PATH);
             }
         });
 
         loadButton.addActionListener(e -> {
-            Balance.load();
+            BalanceStorage.load(Balance.class, Balance.SAVE_PATH);
             refreshFields();
         });
 
         revertButton.addActionListener(e -> {
-            Balance.revert();
+            BalanceStorage.load(Balance.class, Balance.SAVE_PATH);
             refreshFields();
         });
 

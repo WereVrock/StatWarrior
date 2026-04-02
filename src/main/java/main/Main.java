@@ -42,6 +42,7 @@ public final class Main {
 
     public static void main(final String[] args) {
 
+        balance.BalanceStorage.init();
         FRAME = new GameFrame();
 new BalanceFrame();
         // 🔥 start loop AFTER UI exists

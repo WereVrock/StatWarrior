@@ -8,11 +8,20 @@ import java.util.Map;
 
 public final class BalanceStorage {
 
-    private static final Gson gson = new GsonBuilder().setPrettyPrinting().create();
+    private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
+    private static boolean initialized = false;
+
+    // === INIT (CALL ONCE AT START) ===
+    public static void init() {
+        if (initialized) return;
+        initialized = true;
+        load(Balance.class, Balance.SAVE_PATH);
+    }
 
     public static void save(Class<?> clazz, String path) {
         try {
             Map<String, Object> map = new HashMap<>();
+
             for (Field field : clazz.getDeclaredFields()) {
                 int mods = field.getModifiers();
                 if (Modifier.isStatic(mods) && Modifier.isPublic(mods) && !Modifier.isFinal(mods)) {
@@ -22,8 +31,9 @@ public final class BalanceStorage {
             }
 
             try (Writer writer = new FileWriter(path)) {
-                gson.toJson(map, writer);
+                GSON.toJson(map, writer);
             }
+
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -33,8 +43,7 @@ public final class BalanceStorage {
         Map<String, Object> jsonMap = new HashMap<>();
 
         try (Reader reader = new FileReader(path)) {
-            // Use Map<String, Object> to read JSON
-            jsonMap = gson.fromJson(reader, Map.class);
+            jsonMap = GSON.fromJson(reader, Map.class);
         } catch (FileNotFoundException e) {
             System.out.println("No balance file found, using defaults.");
         } catch (Exception e) {
@@ -55,7 +64,6 @@ public final class BalanceStorage {
                         Object casted = ReflectionUtil.castValue(field.getType(), value);
                         field.set(null, casted);
                     } else {
-                        // Missing field, write default to JSON
                         jsonMap.put(name, field.get(null));
                         modified = true;
                     }
