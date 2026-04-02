@@ -10,6 +10,11 @@ public final class KeyboardController extends KeyAdapter implements InputControl
     private final Set<Integer> keys = new HashSet<>();
 
     @Override
+    public void update() {
+        // nothing needed
+    }
+
+    @Override
     public boolean isUpPressed() { return keys.contains(KeyEvent.VK_W); }
 
     @Override
@@ -23,7 +28,7 @@ public final class KeyboardController extends KeyAdapter implements InputControl
 
     @Override
     public boolean isButtonPressed(String button) {
-        return false; // keyboard not mapped generically (can extend later)
+        return false;
     }
 
     @Override
@@ -32,8 +37,12 @@ public final class KeyboardController extends KeyAdapter implements InputControl
     }
 
     @Override
-    public void keyPressed(KeyEvent e) { keys.add(e.getKeyCode()); }
+    public void keyPressed(KeyEvent e) {
+        keys.add(e.getKeyCode());
+    }
 
     @Override
-    public void keyReleased(KeyEvent e) { keys.remove(e.getKeyCode()); }
+    public void keyReleased(KeyEvent e) {
+        keys.remove(e.getKeyCode());
+    }
 }

@@ -1,8 +1,6 @@
 package ui;
 
-import controls.KeyboardController;
 import dungeon.DungeonCell;
-import entity.Player;
 import main.Main;
 
 import javax.swing.*;
@@ -15,34 +13,37 @@ public final class GamePanel extends JPanel implements Runnable {
     private static final int SCREEN_HEIGHT = 600;
     private static final int FPS = 60;
 
-    private final Player player;
-    private final Camera camera;
-    private final KeyboardController controller;
-
     public GamePanel() {
         setFocusable(true);
         setDoubleBuffered(true);
         setPreferredSize(new Dimension(SCREEN_WIDTH, SCREEN_HEIGHT));
 
-        controller = new controls.GamepadController();
-        addKeyListener(controller);
-
-        final DungeonCell[][] grid = Main.DUNGEON.getGrid();
-        player = new Player(grid[0].length / 2, grid.length / 2, TILE_SIZE, controller);
-        camera = new Camera(SCREEN_WIDTH, SCREEN_HEIGHT, TILE_SIZE);
+        // only keyboard listens to keys
+        if (Main.KEYBOARD instanceof java.awt.event.KeyListener keyListener) {
+            addKeyListener(keyListener);
+        }
 
         new Thread(this).start();
     }
 
     @Override
     public void run() {
-        long delay = 1000 / FPS;
+        final long delay = 1000 / FPS;
+
         while (true) {
-            player.update();
-            camera.update(player);
+
+            // 🔥 update input FIRST
+            Main.CONTROLLER.update();
+
+            // update game
+            Main.PLAYER.update();
+            Main.CAMERA.update(Main.PLAYER);
+
             repaint();
 
-            try { Thread.sleep(delay); } catch (InterruptedException ignored) {}
+            try {
+                Thread.sleep(delay);
+            } catch (InterruptedException ignored) {}
         }
     }
 
@@ -51,17 +52,23 @@ public final class GamePanel extends JPanel implements Runnable {
         super.paintComponent(g);
 
         final DungeonCell[][] grid = Main.DUNGEON.getGrid();
-        final int offsetX = camera.getOffsetX();
-        final int offsetY = camera.getOffsetY();
+        final int offsetX = Main.CAMERA.getOffsetX();
+        final int offsetY = Main.CAMERA.getOffsetY();
 
         for (int y = 0; y < grid.length; y++) {
             for (int x = 0; x < grid[y].length; x++) {
                 final DungeonCell cell = grid[y][x];
+
                 g.setColor(cell.isActive() ? Color.WHITE : Color.DARK_GRAY);
-                g.fillRect(x * TILE_SIZE - offsetX, y * TILE_SIZE - offsetY, TILE_SIZE, TILE_SIZE);
+                g.fillRect(
+                        x * TILE_SIZE - offsetX,
+                        y * TILE_SIZE - offsetY,
+                        TILE_SIZE,
+                        TILE_SIZE
+                );
             }
         }
 
-        player.render(g, TILE_SIZE, offsetX, offsetY);
+        Main.PLAYER.render(g, TILE_SIZE, offsetX, offsetY);
     }
 }
