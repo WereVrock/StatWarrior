@@ -10,11 +10,11 @@ import java.util.Map;
 
 public final class BalanceFrame extends JFrame {
 
-    private final Map<Field, JTextField> fieldInputs = new LinkedHashMap<>();
+    private final Map<Field, JComponent> fieldInputs = new LinkedHashMap<>();
 
     public BalanceFrame() {
         setTitle("Balance Editor");
-        setSize(400, 300);
+        setSize(500, 350);
         setLayout(new BorderLayout());
         setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
 
@@ -71,14 +71,28 @@ public final class BalanceFrame extends JFrame {
                 field.setAccessible(true);
 
                 JLabel label = new JLabel(formatFieldName(field.getName()));
-                JTextField textField = new JTextField();
 
-                fieldInputs.put(field, textField);
+                JComponent input;
+
+                if (isNumeric(field.getType())) {
+                    input = new NumericFieldPanel(field.getType());
+                } else {
+                    input = new JTextField();
+                }
+
+                fieldInputs.put(field, input);
 
                 panel.add(label);
-                panel.add(textField);
+                panel.add(input);
             }
         }
+    }
+
+    private boolean isNumeric(Class<?> type) {
+        return type == int.class ||
+               type == long.class ||
+               type == float.class ||
+               type == double.class;
     }
 
     private String formatFieldName(String name) {
@@ -91,13 +105,21 @@ public final class BalanceFrame extends JFrame {
 
     private boolean applyChangesSafe() {
         try {
-            for (Map.Entry<Field, JTextField> entry : fieldInputs.entrySet()) {
+            for (Map.Entry<Field, JComponent> entry : fieldInputs.entrySet()) {
                 Field field = entry.getKey();
-                JTextField input = entry.getValue();
+                JComponent comp = entry.getValue();
+
+                String text;
+
+                if (comp instanceof NumericFieldPanel) {
+                    text = ((NumericFieldPanel) comp).getText();
+                } else {
+                    text = ((JTextField) comp).getText();
+                }
 
                 Object casted = ReflectionUtil.castValue(
                         field.getType(),
-                        parseInput(field.getType(), input.getText())
+                        parseInput(field.getType(), text)
                 );
 
                 field.set(null, casted);
@@ -113,6 +135,7 @@ public final class BalanceFrame extends JFrame {
 
     private Object parseInput(Class<?> type, String text) {
         if (type == int.class) return Integer.parseInt(text);
+        if (type == long.class) return Long.parseLong(text);
         if (type == float.class) return Float.parseFloat(text);
         if (type == double.class) return Double.parseDouble(text);
         if (type == boolean.class) return Boolean.parseBoolean(text);
@@ -122,10 +145,17 @@ public final class BalanceFrame extends JFrame {
     }
 
     private void refreshFields() {
-        for (Map.Entry<Field, JTextField> entry : fieldInputs.entrySet()) {
+        for (Map.Entry<Field, JComponent> entry : fieldInputs.entrySet()) {
             try {
                 Object value = entry.getKey().get(null);
-                entry.getValue().setText(String.valueOf(value));
+                JComponent comp = entry.getValue();
+
+                if (comp instanceof NumericFieldPanel) {
+                    ((NumericFieldPanel) comp).setValue(value);
+                } else {
+                    ((JTextField) comp).setText(String.valueOf(value));
+                }
+
             } catch (Exception e) {
                 e.printStackTrace();
             }
