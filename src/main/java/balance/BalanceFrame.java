@@ -12,6 +12,8 @@ public final class BalanceFrame extends JFrame {
 
     private final Map<Field, JComponent> fieldInputs = new LinkedHashMap<>();
 
+    private final JCheckBox autoApplyCheck = new JCheckBox("Auto Apply");
+
     public BalanceFrame() {
         setTitle("Balance Editor");
         setSize(500, 350);
@@ -34,8 +36,12 @@ public final class BalanceFrame extends JFrame {
         buttonsPanel.add(loadButton);
         buttonsPanel.add(revertButton);
 
+        JPanel bottomPanel = new JPanel(new BorderLayout());
+        bottomPanel.add(autoApplyCheck, BorderLayout.WEST);
+        bottomPanel.add(buttonsPanel, BorderLayout.CENTER);
+
         add(new JScrollPane(fieldsPanel), BorderLayout.CENTER);
-        add(buttonsPanel, BorderLayout.SOUTH);
+        add(bottomPanel, BorderLayout.SOUTH);
 
         refreshFields();
 
@@ -75,9 +81,22 @@ public final class BalanceFrame extends JFrame {
                 JComponent input;
 
                 if (isNumeric(field.getType())) {
-                    input = new NumericFieldPanel(field.getType());
+                    NumericFieldPanel numeric = new NumericFieldPanel(field.getType());
+
+                    numeric.setOnValueChanged(() -> triggerAutoApply());
+
+                    input = numeric;
+
                 } else {
-                    input = new JTextField();
+                    JTextField textField = new JTextField();
+
+                    textField.getDocument().addDocumentListener(new javax.swing.event.DocumentListener() {
+                        @Override public void insertUpdate(javax.swing.event.DocumentEvent e) { triggerAutoApply(); }
+                        @Override public void removeUpdate(javax.swing.event.DocumentEvent e) { triggerAutoApply(); }
+                        @Override public void changedUpdate(javax.swing.event.DocumentEvent e) { triggerAutoApply(); }
+                    });
+
+                    input = textField;
                 }
 
                 fieldInputs.put(field, input);
@@ -86,6 +105,13 @@ public final class BalanceFrame extends JFrame {
                 panel.add(input);
             }
         }
+    }
+
+    // 🔥 SAFE AUTO APPLY (delayed)
+    private void triggerAutoApply() {
+        if (!autoApplyCheck.isSelected()) return;
+
+        SwingUtilities.invokeLater(() -> applyChangesSafe());
     }
 
     private boolean isNumeric(Class<?> type) {
@@ -117,6 +143,11 @@ public final class BalanceFrame extends JFrame {
                     text = ((JTextField) comp).getText();
                 }
 
+                // 🔥 IGNORE invalid intermediate states
+                if (text == null || text.isEmpty() || text.equals("-") || text.equals(".")) {
+                    return false;
+                }
+
                 Object casted = ReflectionUtil.castValue(
                         field.getType(),
                         parseInput(field.getType(), text)
@@ -127,8 +158,7 @@ public final class BalanceFrame extends JFrame {
             return true;
 
         } catch (Exception ex) {
-            ex.printStackTrace();
-            JOptionPane.showMessageDialog(this, "Invalid input");
+            // ❌ DO NOT spam dialog during typing
             return false;
         }
     }

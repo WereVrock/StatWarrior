@@ -1,6 +1,8 @@
 package balance;
 
 import javax.swing.*;
+import javax.swing.event.DocumentEvent;
+import javax.swing.event.DocumentListener;
 import javax.swing.text.*;
 import java.awt.*;
 import java.text.DecimalFormat;
@@ -15,19 +17,26 @@ public final class NumericFieldPanel extends JPanel {
     private final JTextField field;
     private final Class<?> type;
 
-    private final JCheckBox autoApplyCheck;
     private Timer holdTimer;
+
+    private Runnable onValueChanged;
 
     private static final DecimalFormat DECIMAL_FORMAT = new DecimalFormat("#.##");
 
     public NumericFieldPanel(Class<?> type) {
         this.type = type;
         this.field = new JTextField();
-        this.autoApplyCheck = new JCheckBox();
 
         setLayout(new BorderLayout());
 
         ((AbstractDocument) field.getDocument()).setDocumentFilter(new NumericFilter(type));
+
+        // 🔥 Listen for manual typing changes
+        field.getDocument().addDocumentListener(new DocumentListener() {
+            @Override public void insertUpdate(DocumentEvent e) { notifyChange(); }
+            @Override public void removeUpdate(DocumentEvent e) { notifyChange(); }
+            @Override public void changedUpdate(DocumentEvent e) { notifyChange(); }
+        });
 
         JPanel buttons = new JPanel(new GridLayout(2, 2));
 
@@ -36,27 +45,27 @@ public final class NumericFieldPanel extends JPanel {
         buttons.add(createButton("+0.1", STEP_SMALL));
         buttons.add(createButton("-0.1", -STEP_SMALL));
 
-        JPanel rightPanel = new JPanel(new BorderLayout());
-        rightPanel.add(buttons, BorderLayout.CENTER);
-        rightPanel.add(autoApplyCheck, BorderLayout.SOUTH);
-
         add(field, BorderLayout.CENTER);
-        add(rightPanel, BorderLayout.EAST);
+        add(buttons, BorderLayout.EAST);
     }
 
     private JButton createButton(String label, double delta) {
         JButton button = new JButton(label);
 
         // CLICK
-        button.addActionListener(e -> adjustValue(delta));
+        button.addActionListener(e -> {
+            adjustValue(delta);
+            notifyChange();
+        });
 
-        // HOLD (only if checkbox is ticked)
+        // HOLD (always active now)
         button.addMouseListener(new java.awt.event.MouseAdapter() {
             @Override
             public void mousePressed(java.awt.event.MouseEvent e) {
-                if (!autoApplyCheck.isSelected()) return;
-
-                holdTimer = new Timer(TIMER_DELAY, ev -> adjustValue(delta));
+                holdTimer = new Timer(TIMER_DELAY, ev -> {
+                    adjustValue(delta);
+                    notifyChange();
+                });
                 holdTimer.start();
             }
 
@@ -85,6 +94,16 @@ public final class NumericFieldPanel extends JPanel {
         } catch (Exception ignored) {
             field.setText("0");
         }
+    }
+
+    private void notifyChange() {
+        if (onValueChanged != null) {
+            onValueChanged.run();
+        }
+    }
+
+    public void setOnValueChanged(Runnable onValueChanged) {
+        this.onValueChanged = onValueChanged;
     }
 
     private String formatDouble(double value) {
@@ -147,12 +166,10 @@ public final class NumericFieldPanel extends JPanel {
                 } else if (type == long.class) {
                     Long.parseLong(result);
                 } else {
-                    // decimal limit check
                     if (result.contains(".")) {
                         int decimals = result.substring(result.indexOf('.') + 1).length();
                         if (decimals > 2) return false;
                     }
-
                     Double.parseDouble(result);
                 }
 
