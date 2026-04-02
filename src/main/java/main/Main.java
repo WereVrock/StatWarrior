@@ -1,6 +1,7 @@
 package main;
 
 import controls.GamepadController;
+import controls.HybridController;
 import controls.InputController;
 import controls.KeyboardController;
 import dungeon.Dungeon;
@@ -12,11 +13,14 @@ public final class Main {
 
     public static final Dungeon DUNGEON = new Dungeon();
 
-    public static final InputController KEYBOARD = new KeyboardController();
-    public static final GamepadController GAMEPAD = new GamepadController(0);
+  public static final InputController KEYBOARD = new KeyboardController();
+public static final GamepadController GAMEPAD = new GamepadController(0);
 
-    public static final InputController CONTROLLER;
-
+// 🔥 always both
+public static InputController CONTROLLER =
+        new HybridController(KEYBOARD, GAMEPAD);
+    
+   
     public static final Player PLAYER;
     public static final Camera CAMERA;
 
@@ -25,13 +29,6 @@ public final class Main {
         final int screenWidth = 800;
         final int screenHeight = 600;
 
-        if (GAMEPAD.isConnected()) {
-            CONTROLLER = GAMEPAD;
-            System.out.println("Gamepad connected");
-        } else {
-            CONTROLLER = KEYBOARD;
-            System.out.println("Using keyboard");
-        }
 
         final var grid = DUNGEON.getGrid();
 
