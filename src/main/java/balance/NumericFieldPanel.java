@@ -3,25 +3,32 @@ package balance;
 import javax.swing.*;
 import javax.swing.text.*;
 import java.awt.*;
+import java.text.DecimalFormat;
 
 public final class NumericFieldPanel extends JPanel {
 
     private static final double STEP_SMALL = 0.1;
     private static final double STEP_BIG = 1.0;
 
+    private static final int TIMER_DELAY = 120;
+
     private final JTextField field;
     private final Class<?> type;
+
+    private final JCheckBox autoApplyCheck;
+    private Timer holdTimer;
+
+    private static final DecimalFormat DECIMAL_FORMAT = new DecimalFormat("#.##");
 
     public NumericFieldPanel(Class<?> type) {
         this.type = type;
         this.field = new JTextField();
+        this.autoApplyCheck = new JCheckBox();
 
         setLayout(new BorderLayout());
 
-        // === INPUT FILTER (NO LETTERS) ===
         ((AbstractDocument) field.getDocument()).setDocumentFilter(new NumericFilter(type));
 
-        // === BUTTON PANEL ===
         JPanel buttons = new JPanel(new GridLayout(2, 2));
 
         buttons.add(createButton("+1", STEP_BIG));
@@ -29,14 +36,37 @@ public final class NumericFieldPanel extends JPanel {
         buttons.add(createButton("+0.1", STEP_SMALL));
         buttons.add(createButton("-0.1", -STEP_SMALL));
 
+        JPanel rightPanel = new JPanel(new BorderLayout());
+        rightPanel.add(buttons, BorderLayout.CENTER);
+        rightPanel.add(autoApplyCheck, BorderLayout.SOUTH);
+
         add(field, BorderLayout.CENTER);
-        add(buttons, BorderLayout.EAST);
+        add(rightPanel, BorderLayout.EAST);
     }
 
     private JButton createButton(String label, double delta) {
         JButton button = new JButton(label);
 
+        // CLICK
         button.addActionListener(e -> adjustValue(delta));
+
+        // HOLD (only if checkbox is ticked)
+        button.addMouseListener(new java.awt.event.MouseAdapter() {
+            @Override
+            public void mousePressed(java.awt.event.MouseEvent e) {
+                if (!autoApplyCheck.isSelected()) return;
+
+                holdTimer = new Timer(TIMER_DELAY, ev -> adjustValue(delta));
+                holdTimer.start();
+            }
+
+            @Override
+            public void mouseReleased(java.awt.event.MouseEvent e) {
+                if (holdTimer != null) {
+                    holdTimer.stop();
+                }
+            }
+        });
 
         return button;
     }
@@ -49,7 +79,7 @@ public final class NumericFieldPanel extends JPanel {
             if (type == int.class || type == long.class) {
                 field.setText(String.valueOf((long) newValue));
             } else {
-                field.setText(String.valueOf(newValue));
+                field.setText(formatDouble(newValue));
             }
 
         } catch (Exception ignored) {
@@ -57,8 +87,16 @@ public final class NumericFieldPanel extends JPanel {
         }
     }
 
+    private String formatDouble(double value) {
+        return DECIMAL_FORMAT.format(value);
+    }
+
     public void setValue(Object value) {
-        field.setText(String.valueOf(value));
+        if (value instanceof Number && !(type == int.class || type == long.class)) {
+            field.setText(formatDouble(((Number) value).doubleValue()));
+        } else {
+            field.setText(String.valueOf(value));
+        }
     }
 
     public String getText() {
@@ -108,9 +146,13 @@ public final class NumericFieldPanel extends JPanel {
                     Integer.parseInt(result);
                 } else if (type == long.class) {
                     Long.parseLong(result);
-                } else if (type == float.class) {
-                    Float.parseFloat(result);
-                } else if (type == double.class) {
+                } else {
+                    // decimal limit check
+                    if (result.contains(".")) {
+                        int decimals = result.substring(result.indexOf('.') + 1).length();
+                        if (decimals > 2) return false;
+                    }
+
                     Double.parseDouble(result);
                 }
 
