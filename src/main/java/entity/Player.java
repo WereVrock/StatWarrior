@@ -1,5 +1,6 @@
 package entity;
 
+import controls.InputController;
 import dungeon.DungeonCell;
 import main.Main;
 
@@ -13,40 +14,42 @@ public final class Player {
     private static final float MAX_SPEED = 4f;
     private static final float FRICTION = 0.85f;
 
-    private float x, y; // continuous position in pixels
+    private float x, y;
     private float vx, vy;
     private final int tileSize;
-    private final int width, height; // player size in pixels
+    private final int width, height;
+    private final InputController controller;
 
-    public Player(final int startX, final int startY, final int tileSize) {
+    public Player(final int startX, final int startY, final int tileSize, InputController controller) {
         this.tileSize = tileSize;
-        this.width = tileSize;  // can change to different size if needed
+        this.width = tileSize;
         this.height = tileSize;
-
         this.x = startX * tileSize;
         this.y = startY * tileSize;
         this.vx = 0;
         this.vy = 0;
+        this.controller = controller;
     }
 
-    // Update player movement
-    public void update(boolean up, boolean down, boolean left, boolean right) {
+    public void update() {
+        boolean up = controller.isUpPressed();
+        boolean down = controller.isDownPressed();
+        boolean left = controller.isLeftPressed();
+        boolean right = controller.isRightPressed();
+
         if (up) vy -= ACCELERATION;
         if (down) vy += ACCELERATION;
         if (left) vx -= ACCELERATION;
         if (right) vx += ACCELERATION;
 
-        // Clamp velocity
         if (vx > MAX_SPEED) vx = MAX_SPEED;
         if (vx < -MAX_SPEED) vx = -MAX_SPEED;
         if (vy > MAX_SPEED) vy = MAX_SPEED;
         if (vy < -MAX_SPEED) vy = -MAX_SPEED;
 
-        // Apply friction
         vx *= FRICTION;
         vy *= FRICTION;
 
-        // Predict new positions
         float nextX = x + vx;
         float nextY = y + vy;
 
@@ -85,22 +88,13 @@ public final class Player {
         }
     }
 
-    // Continuous coordinates
     public float getX() { return x; }
     public float getY() { return y; }
-
-    // Tile indices (center of player)
     public int getTileX() { return (int)((x + width / 2f) / tileSize); }
     public int getTileY() { return (int)((y + height / 2f) / tileSize); }
 
-    // Render player
     public void render(Graphics g, int tileSize, int offsetX, int offsetY) {
         g.setColor(COLOR);
-        g.fillOval(
-            Math.round(x) - offsetX,
-            Math.round(y) - offsetY,
-            width,
-            height
-        );
+        g.fillOval(Math.round(x) - offsetX, Math.round(y) - offsetY, width, height);
     }
 }

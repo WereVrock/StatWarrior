@@ -10,4 +10,11 @@
         <maven.compiler.release>25</maven.compiler.release>
         <exec.mainClass>wv.statwarrior.StatWarrior</exec.mainClass>
     </properties>
+    <dependencies>
+    <dependency>
+        <groupId>net.java.jinput</groupId>
+        <artifactId>jinput</artifactId>
+        <version>2.0.9</version>
+    </dependency>
+</dependencies>
 </project>
