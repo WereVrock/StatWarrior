@@ -1,5 +1,6 @@
 package entity;
 
+import balance.Balance;
 import controls.InputController;
 import dungeon.DungeonCell;
 import main.Main;
@@ -10,9 +11,6 @@ import java.awt.Graphics;
 public final class Player {
 
     private static final Color COLOR = Color.RED;
-    private static final float ACCELERATION = 0.2f;
-    private static final float MAX_SPEED = 4f;
-    private static final float FRICTION = 0.85f;
 
     private float x, y;
     private float vx, vy;
@@ -37,18 +35,18 @@ public final class Player {
         boolean left = controller.isLeftPressed();
         boolean right = controller.isRightPressed();
 
-        if (up) vy -= ACCELERATION;
-        if (down) vy += ACCELERATION;
-        if (left) vx -= ACCELERATION;
-        if (right) vx += ACCELERATION;
+        if (up) vy -= Balance.PLAYER_ACCELERATION;
+        if (down) vy += Balance.PLAYER_ACCELERATION;
+        if (left) vx -= Balance.PLAYER_ACCELERATION;
+        if (right) vx += Balance.PLAYER_ACCELERATION;
 
-        if (vx > MAX_SPEED) vx = MAX_SPEED;
-        if (vx < -MAX_SPEED) vx = -MAX_SPEED;
-        if (vy > MAX_SPEED) vy = MAX_SPEED;
-        if (vy < -MAX_SPEED) vy = -MAX_SPEED;
+        if (vx > Balance.PLAYER_MAX_SPEED) vx = Balance.PLAYER_MAX_SPEED;
+        if (vx < -Balance.PLAYER_MAX_SPEED) vx = -Balance.PLAYER_MAX_SPEED;
+        if (vy > Balance.PLAYER_MAX_SPEED) vy = Balance.PLAYER_MAX_SPEED;
+        if (vy < -Balance.PLAYER_MAX_SPEED) vy = -Balance.PLAYER_MAX_SPEED;
 
-        vx *= FRICTION;
-        vy *= FRICTION;
+        vx *= Balance.PLAYER_FRICTION;
+        vy *= Balance.PLAYER_FRICTION;
 
         float nextX = x + vx;
         float nextY = y + vy;
@@ -76,12 +74,12 @@ public final class Player {
         tileLeft = (int)(x / tileSize);
         tileRight = (int)((x + width - 1) / tileSize);
         tileTop = (int)(nextY / tileSize);
-        tileBottom = (int)((y + height - 1) / tileSize);
+        int tileBottomY = (int)((nextY + height - 1) / tileSize);
 
-        if (tileTop < 0 || tileBottom >= gridHeight) {
+        if (tileTop < 0 || tileBottomY >= gridHeight) {
             vy = 0;
         } else if (grid[tileTop][tileLeft].isActive() && grid[tileTop][tileRight].isActive() &&
-                   grid[tileBottom][tileLeft].isActive() && grid[tileBottom][tileRight].isActive()) {
+                   grid[tileBottomY][tileLeft].isActive() && grid[tileBottomY][tileRight].isActive()) {
             y = nextY;
         } else {
             vy = 0;

@@ -1,5 +1,6 @@
 package main;
 
+import balance.BalanceFrame;
 import controls.HybridController;
 import controls.InputController;
 import dungeon.Dungeon;
@@ -42,7 +43,7 @@ public final class Main {
     public static void main(final String[] args) {
 
         FRAME = new GameFrame();
-
+new BalanceFrame();
         // 🔥 start loop AFTER UI exists
         LOOP.start();
     }
