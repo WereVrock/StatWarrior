@@ -14,7 +14,6 @@ public final class GamepadController implements InputController {
     }
 
     private final int index;
-
     private ControllerState state;
 
     public GamepadController(final int index) {
@@ -23,8 +22,8 @@ public final class GamepadController implements InputController {
 
     @Override
     public void update() {
-        MANAGER.update(); // 🔥 REQUIRED in this version
-        state = MANAGER.getState(index); // 🔥 correct API
+        MANAGER.update();
+        state = MANAGER.getState(index);
     }
 
     public boolean isConnected() {
@@ -41,13 +40,11 @@ public final class GamepadController implements InputController {
 
     @Override
     public boolean isUpPressed() {
-        // 🔁 inverted
         return state != null && applyDeadzone(state.leftStickY) > 0.5f;
     }
 
     @Override
     public boolean isDownPressed() {
-        // 🔁 inverted
         return state != null && applyDeadzone(state.leftStickY) < -0.5f;
     }
 
@@ -70,27 +67,48 @@ public final class GamepadController implements InputController {
         if (state == null) return false;
 
         return switch (button) {
+            // Face buttons
             case "A" -> state.a;
             case "B" -> state.b;
             case "X" -> state.x;
             case "Y" -> state.y;
+
+            // Bumpers
             case "LB" -> state.lb;
             case "RB" -> state.rb;
+
+            // Stick clicks
+            case "LS" -> state.leftStickClick;
+            case "RS" -> state.rightStickClick;
+
+            // Start / Back
             case "START" -> state.start;
+            case "BACK" -> state.back;
+
+            // D-pad
+            case "DPAD_UP"    -> state.dpadUp;
+            case "DPAD_DOWN"  -> state.dpadDown;
+            case "DPAD_LEFT"  -> state.dpadLeft;
+            case "DPAD_RIGHT" -> state.dpadRight;
+
             default -> false;
         };
     }
+
+    // =========================
+    // Axes
+    // =========================
 
     @Override
     public float getAxis(String axis) {
         if (state == null) return 0f;
 
         return switch (axis) {
-            case "x" -> applyDeadzone(state.leftStickX);
-            case "y" -> applyDeadzone(state.leftStickY);
+            case "x"  -> applyDeadzone(state.leftStickX);
+            case "y"  -> applyDeadzone(state.leftStickY);
             case "rx" -> applyDeadzone(state.rightStickX);
             case "ry" -> applyDeadzone(state.rightStickY);
-            default -> 0f;
+            default   -> 0f;
         };
     }
 }
