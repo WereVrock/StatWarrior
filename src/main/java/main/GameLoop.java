@@ -31,7 +31,7 @@ public final class GameLoop implements Runnable {
             Main.CAMERA.update(Main.PLAYER);
 
             // 🔥 RENDER REQUEST (safe for Swing)
-            Main.FRAME.repaint();
+//            Main.FRAME.repaint();
 
             final long elapsed = System.currentTimeMillis() - start;
             final long sleep = FRAME_TIME - elapsed;

@@ -5,21 +5,18 @@ import controls.HybridController;
 import controls.InputController;
 import dungeon.Dungeon;
 import entity.Player;
+import render3d.GameApplication;
 import ui.Camera;
-import ui.GameFrame;
 
 public final class Main {
 
     public static final Dungeon DUNGEON = new Dungeon();
-
     public static final InputController CONTROLLER = new HybridController();
 
     public static final Player PLAYER;
     public static final Camera CAMERA;
 
-    // 🔥 NEW
-    public static GameFrame FRAME;
-    public static final GameLoop LOOP = new GameLoop();
+//    public static final GameLoop LOOP = new GameLoop();
 
     static {
         final int tileSize = 32;
@@ -43,9 +40,10 @@ public final class Main {
     public static void main(final String[] args) {
 
         balance.BalanceStorage.init();
-        FRAME = new GameFrame();
-new BalanceFrame();
-        // 🔥 start loop AFTER UI exists
-        LOOP.start();
+        new BalanceFrame();
+
+        GameApplication.startApp();
+
+//        LOOP.start();
     }
 }
