@@ -1,4 +1,4 @@
-package ui;
+package render3d;
 
 import entity.Player;
 

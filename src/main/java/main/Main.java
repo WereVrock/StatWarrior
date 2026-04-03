@@ -6,7 +6,7 @@ import controls.InputController;
 import dungeon.Dungeon;
 import entity.Player;
 import render3d.GameApplication;
-import ui.Camera;
+import render3d.Camera;
 
 public final class Main {
 
