@@ -3,8 +3,6 @@ package render3d;
 import com.jme3.app.SimpleApplication;
 import com.jme3.system.AppSettings;
 import main.Main;
-import org.lwjgl.glfw.GLFW;
-import org.lwjgl.glfw.GLFWWindowCloseCallbackI;
 
 public final class GameApplication extends SimpleApplication {
 
@@ -27,18 +25,17 @@ public final class GameApplication extends SimpleApplication {
 
     @Override
     public void simpleInitApp() {
-        flyCam.setMoveSpeed(20);
+        flyCam.setEnabled(false);
 
-        final long windowHandle = ((com.jme3.system.lwjgl.LwjglWindow) context).getWindowHandle();
-
-        GLFW.glfwSetWindowCloseCallback(windowHandle, handle -> {
-            if (Main.BALANCE_FRAME != null) {
-                Main.BALANCE_FRAME.dispose();
-            }
-        });
+        org.lwjgl.glfw.GLFW.glfwSetInputMode(
+                ((com.jme3.system.lwjgl.LwjglWindow) context).getWindowHandle(),
+                org.lwjgl.glfw.GLFW.GLFW_CURSOR,
+                org.lwjgl.glfw.GLFW.GLFW_CURSOR_NORMAL
+        );
 
         DungeonRenderer3D.renderDungeon();
         PlayerRenderer3D.init();
+        Main.THIRD_PERSON_CAMERA.init(cam);
     }
 
     @Override
@@ -48,5 +45,6 @@ public final class GameApplication extends SimpleApplication {
         Main.CAMERA.update(Main.PLAYER);
 
         PlayerRenderer3D.update();
+        Main.THIRD_PERSON_CAMERA.update(cam);
     }
 }

@@ -30,19 +30,37 @@ public final class Player {
     }
 
     public void update() {
-        boolean up = controller.isUpPressed();
-        boolean down = controller.isDownPressed();
-        boolean left = controller.isLeftPressed();
+        boolean up    = controller.isUpPressed();
+        boolean down  = controller.isDownPressed();
+        boolean left  = controller.isLeftPressed();
         boolean right = controller.isRightPressed();
 
-        if (up) vy -= Balance.PLAYER_ACCELERATION;
-        if (down) vy += Balance.PLAYER_ACCELERATION;
-        if (left) vx -= Balance.PLAYER_ACCELERATION;
-        if (right) vx += Balance.PLAYER_ACCELERATION;
+        float yaw = Main.THIRD_PERSON_CAMERA.getYaw();
 
-        if (vx > Balance.PLAYER_MAX_SPEED) vx = Balance.PLAYER_MAX_SPEED;
+        float forwardX =  (float) Math.sin(yaw);
+        float forwardY =  (float) Math.cos(yaw);
+        float rightX   = -(float) Math.cos(yaw);
+        float rightY   =  (float) Math.sin(yaw);
+
+        float moveX = 0, moveY = 0;
+
+        if (up)    { moveX += forwardX; moveY += forwardY; }
+        if (down)  { moveX -= forwardX; moveY -= forwardY; }
+        if (left)  { moveX -= rightX;   moveY -= rightY;   }
+        if (right) { moveX += rightX;   moveY += rightY;   }
+
+        if (moveX != 0 || moveY != 0) {
+            float len = (float) Math.sqrt(moveX * moveX + moveY * moveY);
+            moveX /= len;
+            moveY /= len;
+        }
+
+        vx += moveX * Balance.PLAYER_ACCELERATION;
+        vy += moveY * Balance.PLAYER_ACCELERATION;
+
+        if (vx > Balance.PLAYER_MAX_SPEED)  vx =  Balance.PLAYER_MAX_SPEED;
         if (vx < -Balance.PLAYER_MAX_SPEED) vx = -Balance.PLAYER_MAX_SPEED;
-        if (vy > Balance.PLAYER_MAX_SPEED) vy = Balance.PLAYER_MAX_SPEED;
+        if (vy > Balance.PLAYER_MAX_SPEED)  vy =  Balance.PLAYER_MAX_SPEED;
         if (vy < -Balance.PLAYER_MAX_SPEED) vy = -Balance.PLAYER_MAX_SPEED;
 
         vx *= Balance.PLAYER_FRICTION;
@@ -52,13 +70,12 @@ public final class Player {
         float nextY = y + vy;
 
         final DungeonCell[][] grid = Main.DUNGEON.getGrid();
-        int gridWidth = grid[0].length;
+        int gridWidth  = grid[0].length;
         int gridHeight = grid.length;
 
-        // --- X collision ---
-        int tileLeft = (int)(nextX / tileSize);
-        int tileRight = (int)((nextX + width - 1) / tileSize);
-        int tileTop = (int)(y / tileSize);
+        int tileLeft   = (int)(nextX / tileSize);
+        int tileRight  = (int)((nextX + width - 1) / tileSize);
+        int tileTop    = (int)(y / tileSize);
         int tileBottom = (int)((y + height - 1) / tileSize);
 
         if (tileLeft < 0 || tileRight >= gridWidth) {
@@ -70,10 +87,9 @@ public final class Player {
             vx = 0;
         }
 
-        // --- Y collision ---
-        tileLeft = (int)(x / tileSize);
-        tileRight = (int)((x + width - 1) / tileSize);
-        tileTop = (int)(nextY / tileSize);
+        tileLeft        = (int)(x / tileSize);
+        tileRight       = (int)((x + width - 1) / tileSize);
+        tileTop         = (int)(nextY / tileSize);
         int tileBottomY = (int)((nextY + height - 1) / tileSize);
 
         if (tileTop < 0 || tileBottomY >= gridHeight) {

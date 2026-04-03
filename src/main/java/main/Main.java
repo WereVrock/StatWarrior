@@ -5,13 +5,15 @@ import controls.HybridController;
 import controls.InputController;
 import dungeon.Dungeon;
 import entity.Player;
-import render3d.GameApplication;
 import render3d.Camera;
+import render3d.GameApplication;
+import render3d.ThirdPersonCamera;
 
 public final class Main {
 
     public static final Dungeon DUNGEON = new Dungeon();
     public static final InputController CONTROLLER = new HybridController();
+    public static final ThirdPersonCamera THIRD_PERSON_CAMERA = new ThirdPersonCamera();
 
     public static final Player PLAYER;
     public static final Camera CAMERA;
