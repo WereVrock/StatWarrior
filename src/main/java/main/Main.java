@@ -41,6 +41,7 @@ public final class Main {
     public static void main(final String[] args) {
         balance.BalanceStorage.init();
         BALANCE_FRAME = new BalanceFrame();
+//        new render3d.CameraTunerFrame(); 
         GameApplication.startApp();
     }
 }

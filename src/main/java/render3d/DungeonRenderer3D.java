@@ -10,7 +10,7 @@ import main.Main;
 public final class DungeonRenderer3D {
 
     private static final float TILE_SIZE   = 1f;
-    private static final float WALL_HEIGHT = 1f;
+    private static final float WALL_HEIGHT = 6f;
     private static final float WALL_HALF_H = WALL_HEIGHT / 2f;
     private static final float FLOOR_HALF_H = 0.1f;
     private static final float HALF        = 0.5f;
@@ -35,19 +35,15 @@ public final class DungeonRenderer3D {
 
                 renderFloor(x, y, floorMat);
 
-                // north neighbor (y-1) missing → wall on north face
                 if (y == 0 || !grid[y - 1][x].isActive()) {
                     renderWallFace(x, y, Direction.NORTH, wallMat);
                 }
-                // south neighbor (y+1) missing → wall on south face
                 if (y == rows - 1 || !grid[y + 1][x].isActive()) {
                     renderWallFace(x, y, Direction.SOUTH, wallMat);
                 }
-                // west neighbor (x-1) missing → wall on west face
                 if (x == 0 || !grid[y][x - 1].isActive()) {
                     renderWallFace(x, y, Direction.WEST, wallMat);
                 }
-                // east neighbor (x+1) missing → wall on east face
                 if (x == cols - 1 || !grid[y][x + 1].isActive()) {
                     renderWallFace(x, y, Direction.EAST, wallMat);
                 }
@@ -64,10 +60,10 @@ public final class DungeonRenderer3D {
         float tx, tz, hw, hd;
 
         switch (dir) {
-            case NORTH -> { tx = cx;            tz = cy - HALF; hw = HALF; hd = WALL_THIN; }
-            case SOUTH -> { tx = cx;            tz = cy + HALF; hw = HALF; hd = WALL_THIN; }
-            case WEST  -> { tx = cx - HALF;     tz = cy;        hw = WALL_THIN; hd = HALF; }
-            case EAST  -> { tx = cx + HALF;     tz = cy;        hw = WALL_THIN; hd = HALF; }
+            case NORTH -> { tx = cx;        tz = cy - HALF; hw = HALF; hd = WALL_THIN; }
+            case SOUTH -> { tx = cx;        tz = cy + HALF; hw = HALF; hd = WALL_THIN; }
+            case WEST  -> { tx = cx - HALF; tz = cy;        hw = WALL_THIN; hd = HALF; }
+            case EAST  -> { tx = cx + HALF; tz = cy;        hw = WALL_THIN; hd = HALF; }
             default    -> throw new IllegalArgumentException("Unknown direction");
         }
 

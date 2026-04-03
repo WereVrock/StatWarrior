@@ -7,45 +7,70 @@ import main.Main;
 
 public final class ThirdPersonCamera {
 
-    private static final float DISTANCE     = 6f;
-    private static final float ROTATE_SPEED = 2f;
+  private static final float distance        = 1.78f;
+private static final float rotateSpeed    = 2.00f;
+private static final float pitchMin       =  10.00f;
+private static final float pitchMax       =  63.92f;
+private static final float shoulderOffset = 0.54f;
+private static final float lookAtHeight  = 1.02f;
+private float pitchDefault = 25f;
 
-    private static final float PITCH_MIN    = FastMath.DEG_TO_RAD * 10f;
-    private static final float PITCH_MAX    = FastMath.DEG_TO_RAD * 80f;
-    private static final boolean INVERT_PITCH = false;
 
-    private float yaw   = 0f;
-    private float pitch = FastMath.DEG_TO_RAD * 35f;
+    private float yaw;
+    private float pitch;
+    private Camera cam;
+
+    public ThirdPersonCamera() {
+        yaw   = 0f;
+        pitch = FastMath.DEG_TO_RAD * pitchDefault;
+    }
 
     public void init(Camera cam) {
+        this.cam = cam;
         update(cam);
+    }
+
+    public void refresh() {
+        if (cam == null) return;
+        GameApplication.APP.enqueue(() -> applyToCamera(cam, yaw, pitch));
     }
 
     public void update(Camera cam) {
         float rx = Main.CONTROLLER.getAxis("rx");
         float ry = Main.CONTROLLER.getAxis("ry");
 
-        yaw -= rx * ROTATE_SPEED * 0.016f;
+        yaw -= rx * rotateSpeed * 0.016f;
 
-        float pitchDelta = ry * ROTATE_SPEED * 0.016f;
-        if (INVERT_PITCH) pitchDelta = -pitchDelta;
-        pitch = FastMath.clamp(pitch + pitchDelta, PITCH_MIN, PITCH_MAX);
+        float pitchMinRad = FastMath.DEG_TO_RAD * pitchMin;
+        float pitchMaxRad = FastMath.DEG_TO_RAD * pitchMax;
+        pitch = FastMath.clamp(pitch + ry * rotateSpeed * 0.016f, pitchMinRad, pitchMaxRad);
 
+        applyToCamera(cam, yaw, pitch);
+    }
+
+    private void applyToCamera(Camera cam, float yaw, float pitch) {
         float px = Main.PLAYER.getX() / 32f;
         float pz = Main.PLAYER.getY() / 32f;
 
-        float horizontalDist = FastMath.cos(pitch) * DISTANCE;
-        float verticalDist   = FastMath.sin(pitch) * DISTANCE;
+        Vector3f right = new Vector3f(FastMath.cos(yaw), 0f, -FastMath.sin(yaw));
 
-        float camX = px - FastMath.sin(yaw) * horizontalDist;
-        float camZ = pz - FastMath.cos(yaw) * horizontalDist;
-        float camY = verticalDist;
+        float horizontalDist = FastMath.cos(pitch) * distance;
+        float verticalDist   = FastMath.sin(pitch) * distance;
 
-        Vector3f camPos    = new Vector3f(camX, camY, camZ);
-        Vector3f playerPos = new Vector3f(px, 0.5f, pz);
+        Vector3f camPos = new Vector3f(
+                px - FastMath.sin(yaw) * horizontalDist,
+                verticalDist,
+                pz - FastMath.cos(yaw) * horizontalDist
+        );
+
+        Vector3f lookAt = new Vector3f(px, lookAtHeight, pz);
+
+        Vector3f offset = right.mult(shoulderOffset);
+        camPos.addLocal(offset);
+        lookAt.addLocal(offset);
 
         cam.setLocation(camPos);
-        cam.lookAt(playerPos, Vector3f.UNIT_Y);
+        cam.lookAt(lookAt, Vector3f.UNIT_Y);
     }
 
     public float getYaw() {
