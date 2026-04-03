@@ -15,8 +15,7 @@ public final class Main {
 
     public static final Player PLAYER;
     public static final Camera CAMERA;
-
-//    public static final GameLoop LOOP = new GameLoop();
+    public static BalanceFrame BALANCE_FRAME;
 
     static {
         final int tileSize = 32;
@@ -38,12 +37,8 @@ public final class Main {
     private Main() {}
 
     public static void main(final String[] args) {
-
         balance.BalanceStorage.init();
-        new BalanceFrame();
-
+        BALANCE_FRAME = new BalanceFrame();
         GameApplication.startApp();
-
-//        LOOP.start();
     }
 }

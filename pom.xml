@@ -10,6 +10,13 @@
         <maven.compiler.release>25</maven.compiler.release>
         <exec.mainClass>wv.statwarrior.StatWarrior</exec.mainClass>
     </properties>
+    <build>
+    <resources>
+        <resource>
+            <directory>assets</directory>
+        </resource>
+    </resources>
+</build>
     <dependencies>
     <dependency>
             <groupId>com.xenoamess</groupId>
