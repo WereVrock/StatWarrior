@@ -15,11 +15,12 @@ public final class Balance {
     public static float ENEMY_CHASE_SPEED                = 3.0f;
     public static float ENEMY_FRICTION                   = 0.80f;
     public static float ENEMY_DETECT_RANGE               = 6f;
-    public static float ENEMY_ATTACK_RANGE               = 1.0f;
+    public static float ENEMY_ATTACK_RANGE               = 1.8f;
     public static float ENEMY_WANDER_DIR_CHANGE_INTERVAL = 2.0f;
     public static float ENEMY_WANDER_DIR_CHANGE_VARIANCE = 1.5f;
     public static float ENEMY_LOST_PLAYER_TIMEOUT        = 15.0f;
-    public static float ENEMY_WAYPOINT_REACH_DIST        = 6f;
+    public static float ENEMY_WAYPOINT_REACH_DIST        = 12.0f;
+    public static float ENEMY_WALL_REPULSION             = 800f;
 
     // === ENEMY ATTACK ===
     public static float ENEMY_ATTACK_TELEGRAPH_DURATION  = 0.5f;
@@ -29,9 +30,9 @@ public final class Balance {
     public static float ENEMY_ATTACK_COOLDOWN            = 1.2f;
 
     // === BOB ===
-    public static float BOB_FREQUENCY   = 10f;  // cycles per second
-    public static float BOB_MAGNITUDE   = 0.06f; // world units (3D)
-    public static float BOB_SPEED_THRESHOLD = 0.3f; // min speed to bob
+    public static float BOB_FREQUENCY        = 10f;
+    public static float BOB_MAGNITUDE        = 0.06f;
+    public static float BOB_SPEED_THRESHOLD  = 0.3f;
 
     // === FILE ===
     public static final String SAVE_PATH = "balance.json";

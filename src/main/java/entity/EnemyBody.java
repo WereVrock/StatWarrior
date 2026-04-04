@@ -49,7 +49,7 @@ public final class EnemyBody {
             vx = 0;
         }
 
-        tileLeft        = clamp((int)(x / tileSize),             0, gridWidth  - 1);
+        tileLeft        = clamp((int)(x / tileSize),              0, gridWidth  - 1);
         tileRight       = clamp((int)((x + width - 1) / tileSize), 0, gridWidth  - 1);
         tileTop         = clamp((int)(nextY / tileSize),           0, gridHeight - 1);
         int tileBottomY = clamp((int)((nextY + height - 1) / tileSize), 0, gridHeight - 1);
@@ -102,11 +102,11 @@ public final class EnemyBody {
     public int toTileX(final float worldX) { return (int)(worldX / tileSize); }
     public int toTileY(final float worldY) { return (int)(worldY / tileSize); }
 
-    public int getTileSize() { return tileSize; }
-    public float getX()      { return x; }
-    public float getY()      { return y; }
-    public float getVx()     { return vx; }
-    public float getVy()     { return vy; }
+    public int   getTileSize()   { return tileSize; }
+    public float getX()          { return x; }
+    public float getY()          { return y; }
+    public float getVx()         { return vx; }
+    public float getVy()         { return vy; }
     public float getBobOffset()  { return bobOffset; }
 
     private static int clamp(final int val, final int min, final int max) {

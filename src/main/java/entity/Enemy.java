@@ -23,18 +23,18 @@ public final class Enemy {
     private boolean hasLastKnown;
     private float   shakeOffset;
 
-    private final EnemyBody      body;
-    private final EnemyDetector  detector;
-    private final EnemyNavigator navigator;
-    private final String         id;
+    private final EnemyBody     body;
+    private final EnemyDetector detector;
+    private final EnemySteer    steer;
+    private final String        id;
 
     public Enemy(final float startX, final float startY, final int tileSize, final String id) {
-        this.id           = id;
-        this.body         = new EnemyBody(startX, startY, tileSize);
-        this.detector     = new EnemyDetector(body);
-        this.navigator    = new EnemyNavigator(body, id);
-        this.state        = EnemyState.WANDER;
-        this.attackPhase  = AttackPhase.TELEGRAPH;
+        this.id          = id;
+        this.body        = new EnemyBody(startX, startY, tileSize);
+        this.detector    = new EnemyDetector(body);
+        this.steer       = new EnemySteer(body);
+        this.state       = EnemyState.WANDER;
+        this.attackPhase = AttackPhase.TELEGRAPH;
         this.hasLastKnown = false;
         pickNewWanderDir();
         log("Spawned at tile (" + (int)startX + ", " + (int)startY + ")");
@@ -70,6 +70,7 @@ public final class Enemy {
                 wanderDirX * Balance.ENEMY_ACCELERATION,
                 wanderDirY * Balance.ENEMY_ACCELERATION
         );
+        steer.applyWallRepulsion();
         body.clampSpeed(Balance.ENEMY_WANDER_SPEED);
     }
 
@@ -90,10 +91,6 @@ public final class Enemy {
         state = EnemyState.CHASE;
         lostPlayerTimer = 0f;
         updateLastKnown();
-        navigator.recalculatePath(
-                body.toTileX(Main.PLAYER.getX()),
-                body.toTileY(Main.PLAYER.getY())
-        );
         log("State -> CHASE");
     }
 
@@ -102,16 +99,17 @@ public final class Enemy {
             lostPlayerTimer = 0f;
             updateLastKnown();
 
-            if (detector.isWithinAttackRange() && navigator.isPathEmpty()) {
+            if (detector.isWithinAttackRange()) {
                 enterAttack();
                 return;
             }
 
-            // Only recalculate when player moves to a different tile
-            navigator.recalculatePath(
-                    body.toTileX(Main.PLAYER.getX()),
-                    body.toTileY(Main.PLAYER.getY())
+            steer.seekTarget(
+                    Main.PLAYER.getX() + body.getTileSize() / 2f,
+                    Main.PLAYER.getY() + body.getTileSize() / 2f,
+                    Balance.ENEMY_CHASE_SPEED
             );
+            steer.applyWallRepulsion();
 
         } else {
             lostPlayerTimer += tpf;
@@ -123,37 +121,29 @@ public final class Enemy {
             }
 
             if (hasLastKnown) {
-                final int lkTileX = body.toTileX(lastKnownX);
-                final int lkTileY = body.toTileY(lastKnownY);
-                final int myTileX = body.toTileX(body.centerX());
-                final int myTileY = body.toTileY(body.centerY());
+                final float distToLastKnown = dist(body.centerX(), body.centerY(), lastKnownX, lastKnownY);
 
-                if (myTileX == lkTileX && myTileY == lkTileY) {
+                if (distToLastKnown < Balance.ENEMY_WAYPOINT_REACH_DIST) {
                     body.stop();
                     return;
                 }
 
-                if (navigator.isPathEmpty()) {
-                    navigator.recalculatePath(lkTileX, lkTileY);
-                }
+                steer.seekTarget(lastKnownX, lastKnownY, Balance.ENEMY_CHASE_SPEED);
+                steer.applyWallRepulsion();
             }
         }
-
-        navigator.followPath();
-        body.clampSpeed(Balance.ENEMY_CHASE_SPEED);
     }
 
     private void enterWander() {
         state = EnemyState.WANDER;
         hasLastKnown = false;
-        navigator.clearPath();
         pickNewWanderDir();
         log("State -> WANDER (lost player)");
     }
 
     private void updateLastKnown() {
-        lastKnownX = Main.PLAYER.getX();
-        lastKnownY = Main.PLAYER.getY();
+        lastKnownX = Main.PLAYER.getX() + body.getTileSize() / 2f;
+        lastKnownY = Main.PLAYER.getY() + body.getTileSize() / 2f;
         hasLastKnown = true;
     }
 
@@ -197,7 +187,7 @@ public final class Enemy {
         final int   tileSize = body.getTileSize();
         final float dx       = (Main.PLAYER.getX() + tileSize / 2f) - body.centerX();
         final float dy       = (Main.PLAYER.getY() + tileSize / 2f) - body.centerY();
-        final float dist     = (float) Math.sqrt(dx * dx + dy * dy);
+        final float dist     = dist(0, 0, dx, dy);
 
         if (dist > 0f) {
             body.setVelocity(
@@ -239,6 +229,12 @@ public final class Enemy {
     // =========================================================
     //  HELPERS
     // =========================================================
+
+    private static float dist(final float x1, final float y1, final float x2, final float y2) {
+        final float dx = x2 - x1;
+        final float dy = y2 - y1;
+        return (float) Math.sqrt(dx * dx + dy * dy);
+    }
 
     private void log(final String msg) {
         System.out.println("[" + id + "] " + msg);

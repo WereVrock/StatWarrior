@@ -2,12 +2,14 @@ package balance;
 
 import javax.swing.*;
 import java.awt.*;
-import java.awt.datatransfer.StringSelection;
 import java.awt.event.*;
+import java.io.*;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.awt.Desktop;
+import java.awt.datatransfer.StringSelection;
 
 public final class BalanceFrame extends JFrame {
 
@@ -24,26 +26,27 @@ public final class BalanceFrame extends JFrame {
         fieldsPanel.setLayout(new GridLayout(0, 2));
         buildFields(fieldsPanel);
 
-        JPanel buttonsPanel = new JPanel(new GridLayout(1, 5)); // Updated grid layout for the extra button
+        JPanel buttonsPanel = new JPanel(new GridLayout(1, 6)); // Updated grid layout for the extra button
 
         JButton applyButton = new JButton("Apply");
         JButton saveButton = new JButton("Save");
         JButton loadButton = new JButton("Load");
         JButton revertButton = new JButton("Revert");
-        JButton copyButton = new JButton("Copy to Clipboard"); // New copy button
+        JButton copyButton = new JButton("Copy to Clipboard");
+        JButton openJsonButton = new JButton("Open JSON"); // New button for opening JSON
 
         buttonsPanel.add(applyButton);
         buttonsPanel.add(saveButton);
         buttonsPanel.add(loadButton);
         buttonsPanel.add(revertButton);
-        buttonsPanel.add(copyButton); // Added to panel
+        buttonsPanel.add(copyButton);
+        buttonsPanel.add(openJsonButton); // Added to panel
 
         JPanel bottomPanel = new JPanel(new BorderLayout());
         bottomPanel.add(autoApplyCheck, BorderLayout.WEST);
         bottomPanel.add(buttonsPanel, BorderLayout.CENTER);
 
         JScrollPane scrollPane = new JScrollPane(fieldsPanel);
-        // Adjust scroll speed (default scroll speed is too slow)
         scrollPane.getVerticalScrollBar().addAdjustmentListener(e -> {
             JScrollBar bar = (JScrollBar) e.getSource();
             bar.setUnitIncrement(16); // Increase scroll speed
@@ -71,8 +74,10 @@ public final class BalanceFrame extends JFrame {
             refreshFields();
         });
 
-        // Add action listener for copy button
         copyButton.addActionListener(e -> copyToClipboard());
+
+        // Add action listener for open JSON button
+        openJsonButton.addActionListener(e -> openJsonFile());
 
         setVisible(true);
     }
@@ -200,7 +205,7 @@ public final class BalanceFrame extends JFrame {
         }
     }
 
-    // New method to copy field values to clipboard
+    // Method to copy field values to clipboard
     private void copyToClipboard() {
         StringBuilder clipboardContent = new StringBuilder();
         for (Map.Entry<Field, JComponent> entry : fieldInputs.entrySet()) {
@@ -216,5 +221,23 @@ public final class BalanceFrame extends JFrame {
         StringSelection selection = new StringSelection(clipboardContent.toString());
         Toolkit.getDefaultToolkit().getSystemClipboard().setContents(selection, null);
         JOptionPane.showMessageDialog(this, "Copied to clipboard!");
+    }
+
+    // New method to open and edit the JSON file with the default system application
+    private void openJsonFile() {
+        try {
+            String path = Balance.SAVE_PATH;
+            File file = new File(path);
+            if (file.exists()) {
+                // Open the file using the system's default application (e.g., text editor)
+                Desktop desktop = Desktop.getDesktop();
+                desktop.open(file);
+            } else {
+                JOptionPane.showMessageDialog(this, "JSON file not found: " + path, "Error", JOptionPane.ERROR_MESSAGE);
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+            JOptionPane.showMessageDialog(this, "Failed to open JSON file.", "Error", JOptionPane.ERROR_MESSAGE);
+        }
     }
 }
