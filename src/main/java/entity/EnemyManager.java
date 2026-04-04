@@ -10,8 +10,8 @@ import java.util.Random;
 
 public final class EnemyManager {
 
-    private static final int TILE_SIZE    = 32;
-    private static final int ENEMY_COUNT  = 2;
+    private static final int TILE_SIZE   = 32;
+    private static final int ENEMY_COUNT = 2;
 
     private final List<Enemy> enemies;
 
@@ -26,7 +26,7 @@ public final class EnemyManager {
         final List<Enemy> result = new ArrayList<>();
         for (int i = 0; i < ENEMY_COUNT && i < walkable.size(); i++) {
             final int[] tile = walkable.get(i);
-            result.add(new Enemy(tile[0], tile[1], TILE_SIZE));
+            result.add(new Enemy(tile[0], tile[1], TILE_SIZE, "Enemy-" + (i + 1)));
         }
         return result;
     }

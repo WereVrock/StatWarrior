@@ -14,8 +14,8 @@ import java.util.List;
 
 public final class EnemyRenderer3D {
 
-    private static final float RADIUS        = 0.3f;
-    private static final float HEIGHT        = 1.0f;
+    private static final float RADIUS         = 0.3f;
+    private static final float HEIGHT         = 1.0f;
     private static final int   RADIAL_SAMPLES = 16;
 
     private static final ColorRGBA COLOR_WANDER = ColorRGBA.Green;
@@ -38,7 +38,6 @@ public final class EnemyRenderer3D {
                     "Common/MatDefs/Misc/Unshaded.j3md"
             );
             mat.setColor("Color", COLOR_WANDER);
-
             geo.setMaterial(mat);
             GameApplication.APP.getRootNode().attachChild(geo);
 
@@ -51,18 +50,19 @@ public final class EnemyRenderer3D {
         final List<Enemy> enemies = manager.getEnemies();
 
         for (int i = 0; i < enemies.size(); i++) {
-            final Enemy enemy = enemies.get(i);
-            final Geometry geo = geos.get(i);
-            final Material mat = mats.get(i);
+            final Enemy    enemy = enemies.get(i);
+            final Geometry geo   = geos.get(i);
+            final Material mat   = mats.get(i);
+
+            final float baseY = HEIGHT / 2f;
 
             geo.setLocalTranslation(
-                    enemy.getX() / 32f,
-                    HEIGHT / 2f,
+                    enemy.getX() / 32f + enemy.getShakeOffset(),
+                    baseY + enemy.getBobOffset(),
                     enemy.getY() / 32f
             );
 
-            final ColorRGBA color = stateColor(enemy.getState());
-            mat.setColor("Color", color);
+            mat.setColor("Color", stateColor(enemy.getState()));
         }
     }
 

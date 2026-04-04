@@ -14,43 +14,48 @@ public final class Player {
 
     private float x, y;
     private float vx, vy;
+    private float bobTimer;
+    private float bobOffset;
+
     private final int tileSize;
     private final int width, height;
     private final InputController controller;
 
-    public Player(final int startX, final int startY, final int tileSize, InputController controller) {
-        this.tileSize = tileSize;
-        this.width = tileSize;
-        this.height = tileSize;
-        this.x = startX * tileSize;
-        this.y = startY * tileSize;
-        this.vx = 0;
-        this.vy = 0;
+    public Player(final int startX, final int startY, final int tileSize, final InputController controller) {
+        this.tileSize   = tileSize;
+        this.width      = tileSize;
+        this.height     = tileSize;
+        this.x          = startX * tileSize;
+        this.y          = startY * tileSize;
         this.controller = controller;
     }
 
     public void update() {
-        boolean up    = controller.isUpPressed();
-        boolean down  = controller.isDownPressed();
-        boolean left  = controller.isLeftPressed();
-        boolean right = controller.isRightPressed();
+        handleInput();
+        applyPhysics();
+        updateBob();
+    }
 
-        float yaw = Main.THIRD_PERSON_CAMERA.getYaw();
+    private void handleInput() {
+        final boolean up    = controller.isUpPressed();
+        final boolean down  = controller.isDownPressed();
+        final boolean left  = controller.isLeftPressed();
+        final boolean right = controller.isRightPressed();
 
-        float forwardX =  (float) Math.sin(yaw);
-        float forwardY =  (float) Math.cos(yaw);
-        float rightX   = -(float) Math.cos(yaw);
-        float rightY   =  (float) Math.sin(yaw);
+        final float yaw      = Main.THIRD_PERSON_CAMERA.getYaw();
+        final float forwardX =  (float) Math.sin(yaw);
+        final float forwardY =  (float) Math.cos(yaw);
+        final float rightX   = -(float) Math.cos(yaw);
+        final float rightY   =  (float) Math.sin(yaw);
 
         float moveX = 0, moveY = 0;
-
         if (up)    { moveX += forwardX; moveY += forwardY; }
         if (down)  { moveX -= forwardX; moveY -= forwardY; }
         if (left)  { moveX -= rightX;   moveY -= rightY;   }
         if (right) { moveX += rightX;   moveY += rightY;   }
 
         if (moveX != 0 || moveY != 0) {
-            float len = (float) Math.sqrt(moveX * moveX + moveY * moveY);
+            final float len = (float) Math.sqrt(moveX * moveX + moveY * moveY);
             moveX /= len;
             moveY /= len;
         }
@@ -58,20 +63,22 @@ public final class Player {
         vx += moveX * Balance.PLAYER_ACCELERATION;
         vy += moveY * Balance.PLAYER_ACCELERATION;
 
-        if (vx > Balance.PLAYER_MAX_SPEED)  vx =  Balance.PLAYER_MAX_SPEED;
+        if (vx >  Balance.PLAYER_MAX_SPEED) vx =  Balance.PLAYER_MAX_SPEED;
         if (vx < -Balance.PLAYER_MAX_SPEED) vx = -Balance.PLAYER_MAX_SPEED;
-        if (vy > Balance.PLAYER_MAX_SPEED)  vy =  Balance.PLAYER_MAX_SPEED;
+        if (vy >  Balance.PLAYER_MAX_SPEED) vy =  Balance.PLAYER_MAX_SPEED;
         if (vy < -Balance.PLAYER_MAX_SPEED) vy = -Balance.PLAYER_MAX_SPEED;
+    }
 
+    private void applyPhysics() {
         vx *= Balance.PLAYER_FRICTION;
         vy *= Balance.PLAYER_FRICTION;
 
-        float nextX = x + vx;
-        float nextY = y + vy;
+        final float nextX = x + vx;
+        final float nextY = y + vy;
 
         final DungeonCell[][] grid = Main.DUNGEON.getGrid();
-        int gridWidth  = grid[0].length;
-        int gridHeight = grid.length;
+        final int gridWidth  = grid[0].length;
+        final int gridHeight = grid.length;
 
         int tileLeft   = (int)(nextX / tileSize);
         int tileRight  = (int)((nextX + width - 1) / tileSize);
@@ -102,7 +109,18 @@ public final class Player {
         }
     }
 
-    public void render(Graphics g) {
+    private void updateBob() {
+        final float speed = (float) Math.sqrt(vx * vx + vy * vy);
+        if (speed > Balance.BOB_SPEED_THRESHOLD) {
+            bobTimer += speed * 0.016f;
+            bobOffset = (float) Math.sin(bobTimer * Balance.BOB_FREQUENCY) * Balance.BOB_MAGNITUDE;
+        } else {
+            bobTimer  = 0f;
+            bobOffset = 0f;
+        }
+    }
+
+    public void render(final Graphics g) {
         final int offsetX = Main.CAMERA.getOffsetX();
         final int offsetY = Main.CAMERA.getOffsetY();
 
@@ -115,6 +133,7 @@ public final class Player {
         );
     }
 
-    public float getX() { return x; }
-    public float getY() { return y; }
+    public float getX()         { return x; }
+    public float getY()         { return y; }
+    public float getBobOffset() { return bobOffset; }
 }

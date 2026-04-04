@@ -8,37 +8,33 @@ import main.Main;
 
 public final class PlayerRenderer3D {
 
-    private static final float RADIUS = 0.3f;
-    private static final float HEIGHT = 1.0f;
-    private static final int RADIAL_SAMPLES = 16;
+    private static final float RADIUS         = 0.3f;
+    private static final float HEIGHT         = 1.0f;
+    private static final int   RADIAL_SAMPLES = 16;
 
     private static Geometry playerGeo;
 
     private PlayerRenderer3D() {}
 
     public static void init() {
-        // Cylinder is horizontal by default; axisSamples=2, closed=true, inverted=false
-        Cylinder cylinder = new Cylinder(2, RADIAL_SAMPLES, RADIUS, HEIGHT, true);
-
+        final Cylinder cylinder = new Cylinder(2, RADIAL_SAMPLES, RADIUS, HEIGHT, true);
         playerGeo = new Geometry("Player", cylinder);
-
-        // Rotate 90 degrees around X to stand upright
         playerGeo.rotate((float) Math.PI / 2f, 0f, 0f);
 
-        Material mat = new Material(
+        final Material mat = new Material(
                 GameApplication.APP.getAssetManager(),
                 "Common/MatDefs/Misc/Unshaded.j3md"
         );
 
         playerGeo.setMaterial(mat);
-
         GameApplication.APP.getRootNode().attachChild(playerGeo);
     }
 
     public static void update() {
+        final float baseY = HEIGHT / 2f;
         playerGeo.setLocalTranslation(
                 Main.PLAYER.getX() / 32f,
-                HEIGHT / 2f,
+                baseY + Main.PLAYER.getBobOffset(),
                 Main.PLAYER.getY() / 32f
         );
     }
