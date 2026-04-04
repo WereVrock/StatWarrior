@@ -8,14 +8,16 @@ public final class GameApplication extends SimpleApplication {
 
     public static GameApplication APP;
 
+    private HitFlash hitFlash;
+
     public GameApplication() {
         APP = this;
     }
 
     public static void startApp() {
-        GameApplication app = new GameApplication();
+        final GameApplication app = new GameApplication();
 
-        AppSettings settings = new AppSettings(true);
+        final AppSettings settings = new AppSettings(true);
         settings.setTitle("Modular Dungeon 3D");
         settings.setResolution(800, 600);
 
@@ -37,6 +39,8 @@ public final class GameApplication extends SimpleApplication {
         PlayerRenderer3D.init();
         EnemyRenderer3D.init(Main.ENEMY_MANAGER);
         Main.THIRD_PERSON_CAMERA.init(cam);
+
+        hitFlash = new HitFlash(settings);
     }
 
     @Override
@@ -49,6 +53,12 @@ public final class GameApplication extends SimpleApplication {
 
         PlayerRenderer3D.update();
         EnemyRenderer3D.update(Main.ENEMY_MANAGER);
+        ProjectileRenderer3D.update(Main.ENEMY_MANAGER.getProjectileManager());
         Main.THIRD_PERSON_CAMERA.update(cam);
+
+        if (Main.ENEMY_MANAGER.wasPlayerHitThisFrame()) {
+            hitFlash.trigger();
+        }
+        hitFlash.update(tpf);
     }
 }

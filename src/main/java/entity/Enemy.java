@@ -7,7 +7,7 @@ import java.util.Random;
 
 public final class Enemy {
 
-    private enum AttackPhase { TELEGRAPH, LUNGE, COOLDOWN }
+    private enum AttackPhase { TELEGRAPH, EXECUTE, RETURN, COOLDOWN }
 
     private static final Random RANDOM = new Random();
 
@@ -23,21 +23,31 @@ public final class Enemy {
     private boolean hasLastKnown;
     private float   shakeOffset;
 
-    private final EnemyBody     body;
-    private final EnemyDetector detector;
-    private final EnemySteer    steer;
-    private final String        id;
+    // melee return-to-origin
+    private float meleeOriginX, meleeOriginY;
 
-    public Enemy(final float startX, final float startY, final int tileSize, final String id) {
-        this.id          = id;
-        this.body        = new EnemyBody(startX, startY, tileSize);
-        this.detector    = new EnemyDetector(body);
-        this.steer       = new EnemySteer(body);
-        this.state       = EnemyState.WANDER;
-        this.attackPhase = AttackPhase.TELEGRAPH;
-        this.hasLastKnown = false;
+    private final AttackType        attackType;
+    private final EnemyBody         body;
+    private final EnemyDetector     detector;
+    private final EnemySteer        steer;
+    private final ProjectileManager projectileManager;
+    private final String            id;
+
+    public Enemy(final float startX,      final float startY,
+                 final int tileSize,      final String id,
+                 final AttackType attackType,
+                 final ProjectileManager projectileManager) {
+        this.id               = id;
+        this.attackType       = attackType;
+        this.projectileManager = projectileManager;
+        this.body             = new EnemyBody(startX, startY, tileSize);
+        this.detector         = new EnemyDetector(body);
+        this.steer            = new EnemySteer(body);
+        this.state            = EnemyState.WANDER;
+        this.attackPhase      = AttackPhase.TELEGRAPH;
+        this.hasLastKnown     = false;
         pickNewWanderDir();
-        log("Spawned at tile (" + (int)startX + ", " + (int)startY + ")");
+        log("Spawned at tile (" + (int)startX + ", " + (int)startY + ") type=" + attackType);
     }
 
     public void update(final float tpf) {
@@ -46,7 +56,9 @@ public final class Enemy {
             case CHASE  -> updateChase(tpf);
             case ATTACK -> updateAttack(tpf);
         }
-        final boolean lunging = state == EnemyState.ATTACK && attackPhase == AttackPhase.LUNGE;
+        final boolean lunging = state == EnemyState.ATTACK
+                && attackPhase == AttackPhase.EXECUTE
+                && attackType  == AttackType.CHARGE;
         body.applyPhysics(lunging);
         body.updateBob();
     }
@@ -62,14 +74,10 @@ public final class Enemy {
         }
 
         wanderTimer -= tpf;
-        if (wanderTimer <= 0f) {
-            pickNewWanderDir();
-        }
+        if (wanderTimer <= 0f) pickNewWanderDir();
 
-        body.accelerate(
-                wanderDirX * Balance.ENEMY_ACCELERATION,
-                wanderDirY * Balance.ENEMY_ACCELERATION
-        );
+        body.accelerate(wanderDirX * Balance.ENEMY_ACCELERATION,
+                        wanderDirY * Balance.ENEMY_ACCELERATION);
         steer.applyWallRepulsion();
         body.clampSpeed(Balance.ENEMY_WANDER_SPEED);
     }
@@ -99,7 +107,7 @@ public final class Enemy {
             lostPlayerTimer = 0f;
             updateLastKnown();
 
-            if (detector.isWithinAttackRange()) {
+            if (isAttackRangeReached()) {
                 enterAttack();
                 return;
             }
@@ -113,7 +121,8 @@ public final class Enemy {
 
         } else {
             lostPlayerTimer += tpf;
-            log("Chase: lost player, timeout in " + String.format("%.1f", Balance.ENEMY_LOST_PLAYER_TIMEOUT - lostPlayerTimer) + "s");
+            log("Chase: lost player, timeout in "
+                    + String.format("%.1f", Balance.ENEMY_LOST_PLAYER_TIMEOUT - lostPlayerTimer) + "s");
 
             if (lostPlayerTimer >= Balance.ENEMY_LOST_PLAYER_TIMEOUT) {
                 enterWander();
@@ -121,17 +130,23 @@ public final class Enemy {
             }
 
             if (hasLastKnown) {
-                final float distToLastKnown = dist(body.centerX(), body.centerY(), lastKnownX, lastKnownY);
-
-                if (distToLastKnown < Balance.ENEMY_WAYPOINT_REACH_DIST) {
+                final float distToLK = dist(body.centerX(), body.centerY(), lastKnownX, lastKnownY);
+                if (distToLK < Balance.ENEMY_WAYPOINT_REACH_DIST) {
                     body.stop();
                     return;
                 }
-
                 steer.seekTarget(lastKnownX, lastKnownY, Balance.ENEMY_CHASE_SPEED);
                 steer.applyWallRepulsion();
             }
         }
+    }
+
+    private boolean isAttackRangeReached() {
+        return switch (attackType) {
+            case MELEE  -> detector.isWithinMeleeRange();
+            case RANGED -> detector.isWithinRangedRange();
+            case CHARGE -> detector.isWithinChargeRange();
+        };
     }
 
     private void enterWander() {
@@ -148,7 +163,7 @@ public final class Enemy {
     }
 
     // =========================================================
-    //  ATTACK
+    //  ATTACK — dispatch
     // =========================================================
 
     private void enterAttack() {
@@ -156,18 +171,105 @@ public final class Enemy {
         attackPhase = AttackPhase.TELEGRAPH;
         attackTimer = Balance.ENEMY_ATTACK_TELEGRAPH_DURATION;
         body.stop();
-        log("State -> ATTACK | Phase -> TELEGRAPH");
+        log("State -> ATTACK type=" + attackType + " | Phase -> TELEGRAPH");
     }
 
     private void updateAttack(final float tpf) {
-        switch (attackPhase) {
-            case TELEGRAPH -> updateTelegraph(tpf);
-            case LUNGE     -> updateLunge(tpf);
-            case COOLDOWN  -> updateCooldown(tpf);
+        switch (attackType) {
+            case MELEE  -> updateMeleeAttack(tpf);
+            case RANGED -> updateRangedAttack(tpf);
+            case CHARGE -> updateChargeAttack(tpf);
         }
     }
 
-    private void updateTelegraph(final float tpf) {
+    // =========================================================
+    //  MELEE
+    // =========================================================
+
+    private void updateMeleeAttack(final float tpf) {
+        switch (attackPhase) {
+            case TELEGRAPH -> updateTelegraph(tpf, () -> {
+                meleeOriginX = body.centerX();
+                meleeOriginY = body.centerY();
+                launchTowardPlayer(Balance.ENEMY_MELEE_LUNGE_SPEED);
+                transitionTo(AttackPhase.EXECUTE, Balance.ENEMY_MELEE_LUNGE_DURATION);
+                log("Melee | Phase -> EXECUTE");
+            });
+            case EXECUTE -> {
+                attackTimer -= tpf;
+                if (attackTimer <= 0f) {
+                    body.stop();
+                    launchToward(meleeOriginX, meleeOriginY, Balance.ENEMY_MELEE_RETURN_SPEED);
+                    transitionTo(AttackPhase.RETURN, Balance.ENEMY_MELEE_RETURN_DURATION);
+                    log("Melee | Phase -> RETURN");
+                }
+            }
+            case RETURN -> {
+                attackTimer -= tpf;
+                if (attackTimer <= 0f) {
+                    body.stop();
+                    transitionTo(AttackPhase.COOLDOWN, Balance.ENEMY_ATTACK_COOLDOWN);
+                    log("Melee | Phase -> COOLDOWN");
+                }
+            }
+            case COOLDOWN -> updateCooldown(tpf);
+        }
+    }
+
+    // =========================================================
+    //  RANGED
+    // =========================================================
+
+    private void updateRangedAttack(final float tpf) {
+        switch (attackPhase) {
+            case TELEGRAPH -> updateTelegraph(tpf, () -> {
+                fireProjectile();
+                transitionTo(AttackPhase.COOLDOWN, Balance.ENEMY_ATTACK_COOLDOWN);
+                log("Ranged | fired projectile -> COOLDOWN");
+            });
+            case COOLDOWN -> updateCooldown(tpf);
+            default -> { }
+        }
+    }
+
+    private void fireProjectile() {
+        final float dx   = (Main.PLAYER.getX() + body.getTileSize() / 2f) - body.centerX();
+        final float dy   = (Main.PLAYER.getY() + body.getTileSize() / 2f) - body.centerY();
+        final float dist = dist(0, 0, dx, dy);
+        if (dist < 1f) return;
+
+        projectileManager.spawn(body.centerX(), body.centerY(), dx / dist, dy / dist);
+    }
+
+    // =========================================================
+    //  CHARGE
+    // =========================================================
+
+    private void updateChargeAttack(final float tpf) {
+        switch (attackPhase) {
+            case TELEGRAPH -> updateTelegraph(tpf, () -> {
+                launchTowardPlayer(Balance.ENEMY_CHARGE_SPEED);
+                transitionTo(AttackPhase.EXECUTE, Balance.ENEMY_CHARGE_DURATION);
+                log("Charge | Phase -> EXECUTE");
+            });
+            case EXECUTE -> {
+                attackTimer -= tpf;
+                if (attackTimer <= 0f) {
+                    body.stop();
+                    transitionTo(AttackPhase.COOLDOWN, Balance.ENEMY_ATTACK_COOLDOWN);
+                    log("Charge | Phase -> COOLDOWN");
+                }
+            }
+            case COOLDOWN -> updateCooldown(tpf);
+            default -> { }
+        }
+    }
+
+    // =========================================================
+    //  SHARED ATTACK HELPERS
+    // =========================================================
+
+    private void updateTelegraph(final float tpf, final Runnable onComplete) {
         attackTimer -= tpf;
         shakeOffset = (float)(Math.sin(attackTimer * 80f) * Balance.ENEMY_ATTACK_SHAKE_MAGNITUDE);
 
@@ -179,44 +281,14 @@ public final class Enemy {
 
         if (attackTimer <= 0f) {
             shakeOffset = 0f;
-            launchLunge();
-        }
-    }
-
-    private void launchLunge() {
-        final int   tileSize = body.getTileSize();
-        final float dx       = (Main.PLAYER.getX() + tileSize / 2f) - body.centerX();
-        final float dy       = (Main.PLAYER.getY() + tileSize / 2f) - body.centerY();
-        final float dist     = dist(0, 0, dx, dy);
-
-        if (dist > 0f) {
-            body.setVelocity(
-                    (dx / dist) * Balance.ENEMY_ATTACK_LUNGE_SPEED,
-                    (dy / dist) * Balance.ENEMY_ATTACK_LUNGE_SPEED
-            );
-        }
-
-        attackPhase = AttackPhase.LUNGE;
-        attackTimer = Balance.ENEMY_ATTACK_LUNGE_DURATION;
-        log("Attack | Phase -> LUNGE");
-    }
-
-    private void updateLunge(final float tpf) {
-        attackTimer -= tpf;
-
-        if (attackTimer <= 0f) {
-            body.stop();
-            attackPhase   = AttackPhase.COOLDOWN;
-            cooldownTimer = Balance.ENEMY_ATTACK_COOLDOWN;
-            log("Attack | Phase -> COOLDOWN");
+            onComplete.run();
         }
     }
 
     private void updateCooldown(final float tpf) {
         cooldownTimer -= tpf;
-
         if (cooldownTimer <= 0f) {
-            if (detector.canDetectPlayer() && detector.isWithinAttackRange()) {
+            if (detector.canDetectPlayer() && isAttackRangeReached()) {
                 enterAttack();
             } else if (detector.canDetectPlayer()) {
                 enterChase();
@@ -226,11 +298,37 @@ public final class Enemy {
         }
     }
 
+    private void launchTowardPlayer(final float speed) {
+        launchToward(
+                Main.PLAYER.getX() + body.getTileSize() / 2f,
+                Main.PLAYER.getY() + body.getTileSize() / 2f,
+                speed
+        );
+    }
+
+    private void launchToward(final float tx, final float ty, final float speed) {
+        final float dx   = tx - body.centerX();
+        final float dy   = ty - body.centerY();
+        final float dist = dist(0, 0, dx, dy);
+        if (dist < 1f) return;
+        body.setVelocity((dx / dist) * speed, (dy / dist) * speed);
+    }
+
+    private void transitionTo(final AttackPhase phase, final float duration) {
+        attackPhase = phase;
+        if (phase == AttackPhase.COOLDOWN) {
+            cooldownTimer = duration;
+        } else {
+            attackTimer = duration;
+        }
+    }
+
     // =========================================================
     //  HELPERS
     // =========================================================
 
-    private static float dist(final float x1, final float y1, final float x2, final float y2) {
+    private static float dist(final float x1, final float y1,
+                               final float x2, final float y2) {
         final float dx = x2 - x1;
         final float dy = y2 - y1;
         return (float) Math.sqrt(dx * dx + dy * dy);
@@ -245,4 +343,5 @@ public final class Enemy {
     public float getShakeOffset() { return shakeOffset; }
     public float getBobOffset()   { return body.getBobOffset(); }
     public EnemyState getState()  { return state; }
+    public AttackType getAttackType() { return attackType; }
 }
