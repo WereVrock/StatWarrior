@@ -2,7 +2,8 @@ package balance;
 
 import javax.swing.*;
 import java.awt.*;
-import java.awt.event.ActionEvent;
+import java.awt.datatransfer.StringSelection;
+import java.awt.event.*;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.util.LinkedHashMap;
@@ -11,7 +12,6 @@ import java.util.Map;
 public final class BalanceFrame extends JFrame {
 
     private final Map<Field, JComponent> fieldInputs = new LinkedHashMap<>();
-
     private final JCheckBox autoApplyCheck = new JCheckBox("Auto Apply");
 
     public BalanceFrame() {
@@ -24,29 +24,37 @@ public final class BalanceFrame extends JFrame {
         fieldsPanel.setLayout(new GridLayout(0, 2));
         buildFields(fieldsPanel);
 
-        JPanel buttonsPanel = new JPanel(new GridLayout(1, 4));
+        JPanel buttonsPanel = new JPanel(new GridLayout(1, 5)); // Updated grid layout for the extra button
 
         JButton applyButton = new JButton("Apply");
         JButton saveButton = new JButton("Save");
         JButton loadButton = new JButton("Load");
         JButton revertButton = new JButton("Revert");
+        JButton copyButton = new JButton("Copy to Clipboard"); // New copy button
 
         buttonsPanel.add(applyButton);
         buttonsPanel.add(saveButton);
         buttonsPanel.add(loadButton);
         buttonsPanel.add(revertButton);
+        buttonsPanel.add(copyButton); // Added to panel
 
         JPanel bottomPanel = new JPanel(new BorderLayout());
         bottomPanel.add(autoApplyCheck, BorderLayout.WEST);
         bottomPanel.add(buttonsPanel, BorderLayout.CENTER);
 
-        add(new JScrollPane(fieldsPanel), BorderLayout.CENTER);
+        JScrollPane scrollPane = new JScrollPane(fieldsPanel);
+        // Adjust scroll speed (default scroll speed is too slow)
+        scrollPane.getVerticalScrollBar().addAdjustmentListener(e -> {
+            JScrollBar bar = (JScrollBar) e.getSource();
+            bar.setUnitIncrement(16); // Increase scroll speed
+        });
+
+        add(scrollPane, BorderLayout.CENTER);
         add(bottomPanel, BorderLayout.SOUTH);
 
         refreshFields();
 
         applyButton.addActionListener(this::applyChanges);
-
         saveButton.addActionListener(e -> {
             if (applyChangesSafe()) {
                 BalanceStorage.save(Balance.class, Balance.SAVE_PATH);
@@ -62,6 +70,9 @@ public final class BalanceFrame extends JFrame {
             BalanceStorage.load(Balance.class, Balance.SAVE_PATH);
             refreshFields();
         });
+
+        // Add action listener for copy button
+        copyButton.addActionListener(e -> copyToClipboard());
 
         setVisible(true);
     }
@@ -107,7 +118,6 @@ public final class BalanceFrame extends JFrame {
         }
     }
 
-    // 🔥 SAFE AUTO APPLY (delayed)
     private void triggerAutoApply() {
         if (!autoApplyCheck.isSelected()) return;
 
@@ -143,7 +153,6 @@ public final class BalanceFrame extends JFrame {
                     text = ((JTextField) comp).getText();
                 }
 
-                // 🔥 IGNORE invalid intermediate states
                 if (text == null || text.isEmpty() || text.equals("-") || text.equals(".")) {
                     return false;
                 }
@@ -158,7 +167,6 @@ public final class BalanceFrame extends JFrame {
             return true;
 
         } catch (Exception ex) {
-            // ❌ DO NOT spam dialog during typing
             return false;
         }
     }
@@ -190,5 +198,23 @@ public final class BalanceFrame extends JFrame {
                 e.printStackTrace();
             }
         }
+    }
+
+    // New method to copy field values to clipboard
+    private void copyToClipboard() {
+        StringBuilder clipboardContent = new StringBuilder();
+        for (Map.Entry<Field, JComponent> entry : fieldInputs.entrySet()) {
+            Field field = entry.getKey();
+            try {
+                String fieldName = field.getName();
+                Object fieldValue = field.get(null);
+                clipboardContent.append(fieldName).append("=").append(fieldValue).append("\n");
+            } catch (IllegalAccessException e) {
+                e.printStackTrace();
+            }
+        }
+        StringSelection selection = new StringSelection(clipboardContent.toString());
+        Toolkit.getDefaultToolkit().getSystemClipboard().setContents(selection, null);
+        JOptionPane.showMessageDialog(this, "Copied to clipboard!");
     }
 }
