@@ -35,16 +35,20 @@ public final class GameApplication extends SimpleApplication {
 
         DungeonRenderer3D.renderDungeon();
         PlayerRenderer3D.init();
+        EnemyRenderer3D.init(Main.ENEMY_MANAGER);
         Main.THIRD_PERSON_CAMERA.init(cam);
     }
 
     @Override
-    public void simpleUpdate(float tpf) {
+    public void simpleUpdate(final float tpf) {
         Main.CONTROLLER.update();
         Main.PLAYER.update();
         Main.CAMERA.update(Main.PLAYER);
 
+        Main.ENEMY_MANAGER.update(tpf);
+
         PlayerRenderer3D.update();
+        EnemyRenderer3D.update(Main.ENEMY_MANAGER);
         Main.THIRD_PERSON_CAMERA.update(cam);
     }
 }
