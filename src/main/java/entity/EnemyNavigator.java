@@ -9,16 +9,20 @@ import java.util.List;
 public final class EnemyNavigator {
 
     private List<int[]> currentPath;
-    private int pathIndex;
+    private int         pathIndex;
+    private int         lastGoalTileX;
+    private int         lastGoalTileY;
 
     private final EnemyBody body;
-    private final String id;
+    private final String    id;
 
     public EnemyNavigator(final EnemyBody body, final String id) {
-        this.body        = body;
-        this.id          = id;
-        this.currentPath = Collections.emptyList();
-        this.pathIndex   = 0;
+        this.body          = body;
+        this.id            = id;
+        this.currentPath   = Collections.emptyList();
+        this.pathIndex     = 0;
+        this.lastGoalTileX = -1;
+        this.lastGoalTileY = -1;
     }
 
     public void recalculatePath(final int goalTileX, final int goalTileY) {
@@ -26,16 +30,25 @@ public final class EnemyNavigator {
         final int myTileY = body.toTileY(body.centerY());
 
         if (myTileX == goalTileX && myTileY == goalTileY) {
-            currentPath = Collections.emptyList();
-            pathIndex = 0;
+            currentPath    = Collections.emptyList();
+            pathIndex      = 0;
+            lastGoalTileX  = goalTileX;
+            lastGoalTileY  = goalTileY;
+            return;
+        }
+
+        // Only recalculate when the goal tile actually changes
+        if (goalTileX == lastGoalTileX && goalTileY == lastGoalTileY && !currentPath.isEmpty()) {
             return;
         }
 
         final List<int[]> path = PathFinder.findPath(myTileX, myTileY, goalTileX, goalTileY);
 
         if (!path.isEmpty()) {
-            currentPath = path;
-            pathIndex = 1;
+            currentPath   = path;
+            pathIndex     = 1; // index 0 is current tile, skip it
+            lastGoalTileX = goalTileX;
+            lastGoalTileY = goalTileY;
             log("path recalculated, " + path.size() + " steps to (" + goalTileX + ", " + goalTileY + ")");
         }
     }
@@ -45,12 +58,12 @@ public final class EnemyNavigator {
             return;
         }
 
-        final int[] target   = currentPath.get(pathIndex);
-        final float targetCX = target[0] * body.getTileSize() + body.getTileSize() / 2f;
-        final float targetCY = target[1] * body.getTileSize() + body.getTileSize() / 2f;
-        final float dx       = targetCX - body.centerX();
-        final float dy       = targetCY - body.centerY();
-        final float dist     = (float) Math.sqrt(dx * dx + dy * dy);
+        final int[]  target   = currentPath.get(pathIndex);
+        final float  targetCX = target[0] * body.getTileSize() + body.getTileSize() / 2f;
+        final float  targetCY = target[1] * body.getTileSize() + body.getTileSize() / 2f;
+        final float  dx       = targetCX - body.centerX();
+        final float  dy       = targetCY - body.centerY();
+        final float  dist     = (float) Math.sqrt(dx * dx + dy * dy);
 
         if (dist < Balance.ENEMY_WAYPOINT_REACH_DIST) {
             pathIndex++;
@@ -68,8 +81,10 @@ public final class EnemyNavigator {
     }
 
     public void clearPath() {
-        currentPath = Collections.emptyList();
-        pathIndex   = 0;
+        currentPath   = Collections.emptyList();
+        pathIndex     = 0;
+        lastGoalTileX = -1;
+        lastGoalTileY = -1;
     }
 
     public boolean isPathEmpty() {

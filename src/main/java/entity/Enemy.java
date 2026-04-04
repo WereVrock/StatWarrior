@@ -107,6 +107,7 @@ public final class Enemy {
                 return;
             }
 
+            // Only recalculate when player moves to a different tile
             navigator.recalculatePath(
                     body.toTileX(Main.PLAYER.getX()),
                     body.toTileY(Main.PLAYER.getY())
@@ -193,10 +194,10 @@ public final class Enemy {
     }
 
     private void launchLunge() {
-        final int tileSize = body.getTileSize();
-        final float dx     = (Main.PLAYER.getX() + tileSize / 2f) - body.centerX();
-        final float dy     = (Main.PLAYER.getY() + tileSize / 2f) - body.centerY();
-        final float dist   = (float) Math.sqrt(dx * dx + dy * dy);
+        final int   tileSize = body.getTileSize();
+        final float dx       = (Main.PLAYER.getX() + tileSize / 2f) - body.centerX();
+        final float dy       = (Main.PLAYER.getY() + tileSize / 2f) - body.centerY();
+        final float dist     = (float) Math.sqrt(dx * dx + dy * dy);
 
         if (dist > 0f) {
             body.setVelocity(
