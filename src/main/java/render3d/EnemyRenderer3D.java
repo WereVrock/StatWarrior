@@ -14,29 +14,28 @@ import java.util.List;
 
 public final class EnemyRenderer3D {
 
-    private static final float WIDTH    = 1.0f;
-    private static final float HEIGHT   = 1.0f;
-    private static final float Y_OFFSET = 0.0f;
-
+    private static final float  WIDTH          = 1.0f;
+    private static final float  HEIGHT         = 1.0f;
+    private static final float  Y_BASE         = HEIGHT / 2f;
     private static final String TEXTURE_MELEE  = "Textures/sprites/enemy_melee.png";
     private static final String TEXTURE_RANGED = "Textures/sprites/enemy_ranged.png";
     private static final String TEXTURE_CHARGE = "Textures/sprites/enemy_charge.png";
+    private static final String TEXTURE_ALL    = "Textures/sprites/enemy_all.png";
 
     private static final List<Geometry> geos = new ArrayList<>();
 
     private EnemyRenderer3D() {}
 
     public static void init(final EnemyManager manager) {
-        for (int i = 0; i < manager.getEnemies().size(); i++) {
-            final Enemy    enemy   = manager.getEnemies().get(i);
-            final Quad     quad    = new Quad(WIDTH, HEIGHT);
-            final Geometry geo     = new Geometry("Enemy_" + i, quad);
-            final Material mat     = new Material(
+        for (final Enemy enemy : manager.getEnemies()) {
+            final Quad     quad = new Quad(WIDTH, HEIGHT);
+            final Geometry geo  = new Geometry("Enemy_" + enemy.getAttackTypes(), quad);
+            final Material mat  = new Material(
                     GameApplication.APP.getAssetManager(),
                     "Common/MatDefs/Misc/Unshaded.j3md"
             );
             final Texture tex = GameApplication.APP.getAssetManager()
-                    .loadTexture(texturePath(enemy.getAttackType()));
+                    .loadTexture(texturePath(enemy.getAttackTypes()));
             mat.setTexture("ColorMap", tex);
             mat.getAdditionalRenderState().setBlendMode(RenderState.BlendMode.Alpha);
             geo.setMaterial(mat);
@@ -48,22 +47,21 @@ public final class EnemyRenderer3D {
     public static void update(final EnemyManager manager) {
         final List<Enemy> enemies = manager.getEnemies();
         for (int i = 0; i < enemies.size(); i++) {
-            final Enemy    enemy = enemies.get(i);
-            final Geometry geo   = geos.get(i);
-            final float    bobY  = Y_OFFSET + enemy.getBobOffset();
-            final float    shakeX = enemy.getShakeOffset();
+            final Enemy    enemy  = enemies.get(i);
+            final Geometry geo    = geos.get(i);
 
-            BillboardRenderer3D.faceCamera(geo, enemy.getX(), enemy.getY(), bobY);
+            BillboardRenderer3D.faceCamera(geo, enemy.getX(), enemy.getY(),
+                    Y_BASE + enemy.getBobOffset());
 
-            // Apply shake as additional X translation in world space
             final com.jme3.math.Vector3f pos = geo.getLocalTranslation().clone();
-            pos.x += shakeX;
+            pos.x += enemy.getShakeOffset();
             geo.setLocalTranslation(pos);
         }
     }
 
-    private static String texturePath(final AttackType type) {
-        return switch (type) {
+    private static String texturePath(final List<AttackType> types) {
+        if (types.size() > 1)                    return TEXTURE_ALL;
+        return switch (types.get(0)) {
             case MELEE  -> TEXTURE_MELEE;
             case RANGED -> TEXTURE_RANGED;
             case CHARGE -> TEXTURE_CHARGE;

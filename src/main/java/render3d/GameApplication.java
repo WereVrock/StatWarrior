@@ -15,8 +15,8 @@ public final class GameApplication extends SimpleApplication {
     }
 
     public static void startApp() {
-        final GameApplication app = new GameApplication();
-        final AppSettings settings = new AppSettings(true);
+        final GameApplication app      = new GameApplication();
+        final AppSettings     settings = new AppSettings(true);
         settings.setTitle("Modular Dungeon 3D");
         settings.setResolution(800, 600);
         app.setSettings(settings);
