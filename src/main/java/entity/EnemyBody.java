@@ -1,6 +1,7 @@
 // ===== entity/EnemyBody.java =====
 package entity;
 
+import balance.Balance;
 import dungeon.DungeonCell;
 import main.Main;
 
@@ -24,8 +25,8 @@ public final class EnemyBody {
 
     public void applyPhysics(final boolean skipFriction) {
         if (!skipFriction) {
-            vx *= balance.Balance.ENEMY_FRICTION;
-            vy *= balance.Balance.ENEMY_FRICTION;
+            vx *= Balance.ENEMY_FRICTION;
+            vy *= Balance.ENEMY_FRICTION;
         }
 
         final DungeonCell[][] grid = Main.DUNGEON.getGrid();
@@ -64,6 +65,35 @@ public final class EnemyBody {
         }
     }
 
+    /**
+     * Bounces both the enemy and the player away from each other.
+     * Enemy is pushed toward melee range distance; player is nudged back.
+     * Both respect wall collisions via applyPhysics next frame.
+     */
+    public void bounceFromPlayer(final float playerSpeed) {
+        final float px = Main.PLAYER.centerX();
+        final float py = Main.PLAYER.centerY();
+
+        final float ex = centerX();
+        final float ey = centerY();
+
+        final float dx   = ex - px;
+        final float dy   = ey - py;
+        final float dist = (float) Math.sqrt(dx * dx + dy * dy);
+
+        if (dist < 1f) return;
+
+        final float nx = dx / dist;
+        final float ny = dy / dist;
+
+        // Push enemy away from player
+        setVelocity(nx * playerSpeed, ny * playerSpeed);
+
+        // Nudge player away from enemy (opposite direction, lighter)
+        final float playerNudge = playerSpeed * 0.4f;
+        Main.PLAYER.nudge(-nx * playerNudge, -ny * playerNudge);
+    }
+
     public void updateBob() {
         final float speed = (float) Math.sqrt(vx * vx + vy * vy);
         if (speed > BobConstants.SPEED_THRESHOLD) {
@@ -82,16 +112,8 @@ public final class EnemyBody {
         if (vy < -max) vy = -max;
     }
 
-    public void accelerate(final float ax, final float ay) {
-        vx += ax;
-        vy += ay;
-    }
-
-    public void setVelocity(final float newVx, final float newVy) {
-        vx = newVx;
-        vy = newVy;
-    }
-
+    public void accelerate(final float ax, final float ay) { vx += ax; vy += ay; }
+    public void setVelocity(final float newVx, final float newVy) { vx = newVx; vy = newVy; }
     public void stopX() { vx = 0; }
     public void stopY() { vy = 0; }
     public void stop()  { vx = 0; vy = 0; }
@@ -102,12 +124,12 @@ public final class EnemyBody {
     public int toTileX(final float worldX) { return (int)(worldX / tileSize); }
     public int toTileY(final float worldY) { return (int)(worldY / tileSize); }
 
-    public int   getTileSize()   { return tileSize; }
-    public float getX()          { return x; }
-    public float getY()          { return y; }
-    public float getVx()         { return vx; }
-    public float getVy()         { return vy; }
-    public float getBobOffset()  { return bobOffset; }
+    public int   getTileSize()  { return tileSize; }
+    public float getX()         { return x; }
+    public float getY()         { return y; }
+    public float getVx()        { return vx; }
+    public float getVy()        { return vy; }
+    public float getBobOffset() { return bobOffset; }
 
     private static int clamp(final int val, final int min, final int max) {
         return Math.max(min, Math.min(val, max));

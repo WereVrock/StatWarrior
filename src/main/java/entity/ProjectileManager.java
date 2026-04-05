@@ -1,3 +1,4 @@
+// ===== entity/ProjectileManager.java =====
 package entity;
 
 import balance.Balance;
@@ -25,9 +26,10 @@ public final class ProjectileManager {
             p.update(tpf);
 
             if (p.hitsPlayer()) {
-                // SAME pipeline as melee / charge
-                Main.PLAYER_MANAGER.getsHit();
-
+                final boolean parried = Main.PLAYER.tryParry(p.getX(), p.getY());
+                if (!parried && !Main.PLAYER.isInvincible()) {
+                    Main.PLAYER_MANAGER.getsHit(p.getX(), p.getY());
+                }
                 p.kill();
             }
 

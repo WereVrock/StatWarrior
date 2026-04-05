@@ -21,23 +21,45 @@ public final class Player {
     private final int tileSize;
     private final int width, height;
     private final InputController controller;
+    private final PlayerActions   actions;
 
-    public Player(final int startX, final int startY, final int tileSize, final InputController controller) {
+    private float inputDirX = 0f;
+    private float inputDirY = 0f;
+
+    public Player(final int startX, final int startY, final int tileSize,
+                  final InputController controller) {
         this.tileSize   = tileSize;
         this.width      = tileSize;
         this.height     = tileSize;
         this.x          = startX * tileSize;
         this.y          = startY * tileSize;
         this.controller = controller;
+        this.actions    = new PlayerActions(controller);
     }
 
     public void update() {
-        handleInput();
+        computeInputDir();
+
+        final float[] impulse = actions.update(0.016f, inputDirX, inputDirY, vx, vy);
+
+        if (actions.isDodging()) {
+            vx = impulse[0];
+            vy = impulse[1];
+        } else if (!actions.isDodgeFreeze()) {
+            handleInput();
+        }
+
         applyPhysics();
         updateBob();
     }
 
-    private void handleInput() {
+    /** Applies an external velocity nudge — used by bounce logic. Physics resolves wall safety. */
+    public void nudge(final float nx, final float ny) {
+        vx += nx;
+        vy += ny;
+    }
+
+    private void computeInputDir() {
         final boolean up    = controller.isUpPressed();
         final boolean down  = controller.isDownPressed();
         final boolean left  = controller.isLeftPressed();
@@ -49,20 +71,25 @@ public final class Player {
         final float rightX   = -(float) Math.cos(yaw);
         final float rightY   =  (float) Math.sin(yaw);
 
-        float moveX = 0, moveY = 0;
-        if (up)    { moveX += forwardX; moveY += forwardY; }
-        if (down)  { moveX -= forwardX; moveY -= forwardY; }
-        if (left)  { moveX -= rightX;   moveY -= rightY;   }
-        if (right) { moveX += rightX;   moveY += rightY;   }
+        float mx = 0, my = 0;
+        if (up)    { mx += forwardX; my += forwardY; }
+        if (down)  { mx -= forwardX; my -= forwardY; }
+        if (left)  { mx -= rightX;   my -= rightY;   }
+        if (right) { mx += rightX;   my += rightY;   }
 
-        if (moveX != 0 || moveY != 0) {
-            final float len = (float) Math.sqrt(moveX * moveX + moveY * moveY);
-            moveX /= len;
-            moveY /= len;
+        final float len = (float) Math.sqrt(mx * mx + my * my);
+        if (len > 0.001f) {
+            inputDirX = mx / len;
+            inputDirY = my / len;
+        } else {
+            inputDirX = 0f;
+            inputDirY = 0f;
         }
+    }
 
-        vx += moveX * Balance.PLAYER_ACCELERATION;
-        vy += moveY * Balance.PLAYER_ACCELERATION;
+    private void handleInput() {
+        vx += inputDirX * Balance.PLAYER_ACCELERATION;
+        vy += inputDirY * Balance.PLAYER_ACCELERATION;
 
         if (vx >  Balance.PLAYER_MAX_SPEED) vx =  Balance.PLAYER_MAX_SPEED;
         if (vx < -Balance.PLAYER_MAX_SPEED) vx = -Balance.PLAYER_MAX_SPEED;
@@ -111,6 +138,10 @@ public final class Player {
     }
 
     private void updateBob() {
+        if (actions.isDodging()) {
+            bobOffset = 0f;
+            return;
+        }
         final float speed = (float) Math.sqrt(vx * vx + vy * vy);
         if (speed > BobConstants.SPEED_THRESHOLD) {
             bobTimer += speed * 0.016f;
@@ -124,17 +155,19 @@ public final class Player {
     public void render(final Graphics g) {
         final int offsetX = Main.CAMERA.getOffsetX();
         final int offsetY = Main.CAMERA.getOffsetY();
-
         g.setColor(COLOR);
-        g.fillOval(
-                Math.round(x) - offsetX,
-                Math.round(y) - offsetY,
-                width,
-                height
-        );
+        g.fillOval(Math.round(x) - offsetX, Math.round(y) - offsetY, width, height);
     }
 
-    public float getX()         { return x; }
-    public float getY()         { return y; }
-    public float getBobOffset() { return bobOffset; }
+    public boolean tryParry(final float attackerX, final float attackerY) {
+        return actions.tryParry(attackerX, attackerY, centerX(), centerY());
+    }
+
+    public boolean isInvincible()   { return actions.isInvincible(); }
+    public float   centerX()        { return x + width  / 2f; }
+    public float   centerY()        { return y + height / 2f; }
+    public float   getX()           { return x; }
+    public float   getY()           { return y; }
+    public float   getBobOffset()   { return bobOffset; }
+    public PlayerActions getActions() { return actions; }
 }

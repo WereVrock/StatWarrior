@@ -1,3 +1,4 @@
+// ===== entity/EnemyMelee.java =====
 package entity;
 
 import balance.Balance;
@@ -21,9 +22,9 @@ public final class EnemyMelee {
     }
 
     public void launchTowardPlayer() {
-        final int   ts   = body.getTileSize();
-        final float tx   = Main.PLAYER.getX() + ts / 2f;
-        final float ty   = Main.PLAYER.getY() + ts / 2f;
+        final int   ts = body.getTileSize();
+        final float tx = Main.PLAYER.getX() + ts / 2f;
+        final float ty = Main.PLAYER.getY() + ts / 2f;
         launchToward(tx, ty, Balance.ENEMY_MELEE_LUNGE_SPEED);
         log("lunge launched");
     }
@@ -33,14 +34,26 @@ public final class EnemyMelee {
         log("returning to origin");
     }
 
-    public void checkHit() {
+    /**
+     * Returns true if contact occurred (hit or parried).
+     * On contact, triggers bounce on both bodies.
+     */
+    public boolean checkHit() {
         final float dx     = (Main.PLAYER.getX() + body.getTileSize() / 2f) - body.centerX();
         final float dy     = (Main.PLAYER.getY() + body.getTileSize() / 2f) - body.centerY();
         final float distSq = dx * dx + dy * dy;
         final float range  = Balance.ENEMY_MELEE_HIT_RADIUS * body.getTileSize();
-        if (distSq <= range * range) {
-            Main.PLAYER_MANAGER.getsHit();
+
+        if (distSq > range * range) return false;
+
+        final boolean parried = Main.PLAYER.tryParry(body.centerX(), body.centerY());
+
+        if (!parried && !Main.PLAYER.isInvincible()) {
+            Main.PLAYER_MANAGER.getsHit(body.centerX(), body.centerY());
         }
+
+        body.bounceFromPlayer(PlayerConstants.BOUNCE_SPEED);
+        return true;
     }
 
     private void launchToward(final float tx, final float ty, final float speed) {

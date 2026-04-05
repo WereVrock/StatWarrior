@@ -1,3 +1,4 @@
+// ===== entity/EnemyCharge.java =====
 package entity;
 
 import balance.Balance;
@@ -26,14 +27,26 @@ public final class EnemyCharge {
         log("charge launched");
     }
 
-    public void checkHit() {
+    /**
+     * Returns true if contact occurred (hit or parried).
+     * On contact, triggers bounce on both bodies.
+     */
+    public boolean checkHit() {
         final float dx     = (Main.PLAYER.getX() + body.getTileSize() / 2f) - body.centerX();
         final float dy     = (Main.PLAYER.getY() + body.getTileSize() / 2f) - body.centerY();
         final float distSq = dx * dx + dy * dy;
         final float range  = Balance.ENEMY_CHARGE_HIT_RADIUS * body.getTileSize();
-        if (distSq <= range * range) {
-            Main.PLAYER_MANAGER.getsHit();
+
+        if (distSq > range * range) return false;
+
+        final boolean parried = Main.PLAYER.tryParry(body.centerX(), body.centerY());
+
+        if (!parried && !Main.PLAYER.isInvincible()) {
+            Main.PLAYER_MANAGER.getsHit(body.centerX(), body.centerY());
         }
+
+        body.bounceFromPlayer(PlayerConstants.BOUNCE_SPEED);
+        return true;
     }
 
     private void log(final String msg) {
