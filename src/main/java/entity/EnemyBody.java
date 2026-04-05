@@ -1,6 +1,6 @@
+// ===== entity/EnemyBody.java =====
 package entity;
 
-import balance.Balance;
 import dungeon.DungeonCell;
 import main.Main;
 
@@ -24,8 +24,8 @@ public final class EnemyBody {
 
     public void applyPhysics(final boolean skipFriction) {
         if (!skipFriction) {
-            vx *= Balance.ENEMY_FRICTION;
-            vy *= Balance.ENEMY_FRICTION;
+            vx *= balance.Balance.ENEMY_FRICTION;
+            vy *= balance.Balance.ENEMY_FRICTION;
         }
 
         final DungeonCell[][] grid = Main.DUNGEON.getGrid();
@@ -66,9 +66,9 @@ public final class EnemyBody {
 
     public void updateBob() {
         final float speed = (float) Math.sqrt(vx * vx + vy * vy);
-        if (speed > Balance.BOB_SPEED_THRESHOLD) {
+        if (speed > BobConstants.SPEED_THRESHOLD) {
             bobTimer += speed * 0.016f;
-            bobOffset = (float) Math.sin(bobTimer * Balance.BOB_FREQUENCY) * Balance.BOB_MAGNITUDE;
+            bobOffset = (float) Math.sin(bobTimer * BobConstants.FREQUENCY) * BobConstants.MAGNITUDE;
         } else {
             bobTimer  = 0f;
             bobOffset = 0f;

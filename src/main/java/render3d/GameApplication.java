@@ -1,3 +1,4 @@
+// ===== render3d/GameApplication.java =====
 package render3d;
 
 import com.jme3.app.SimpleApplication;
@@ -8,7 +9,8 @@ public final class GameApplication extends SimpleApplication {
 
     public static GameApplication APP;
 
-    private HitFlash hitFlash;
+    private HitFlash  hitFlash;
+    private PauseMenu pauseMenu;
 
     public GameApplication() {
         APP = this;
@@ -18,8 +20,18 @@ public final class GameApplication extends SimpleApplication {
         final GameApplication app      = new GameApplication();
         final AppSettings     settings = new AppSettings(true);
         settings.setTitle("Modular Dungeon 3D");
-        settings.setResolution(800, 600);
+        settings.setFullscreen(true);
+
+        // Grab the primary screen resolution for fullscreen
+        final java.awt.DisplayMode dm =
+                java.awt.GraphicsEnvironment
+                        .getLocalGraphicsEnvironment()
+                        .getDefaultScreenDevice()
+                        .getDisplayMode();
+        settings.setResolution(dm.getWidth(), dm.getHeight());
+
         app.setSettings(settings);
+        app.setShowSettings(false); // skip the jME settings dialog
         app.start();
     }
 
@@ -40,11 +52,22 @@ public final class GameApplication extends SimpleApplication {
 
         hitFlash = new HitFlash(settings);
         Main.PLAYER_MANAGER.init(hitFlash);
+
+        // Build pause menu on the Swing thread; hide it until Start is pressed
+        javax.swing.SwingUtilities.invokeLater(() -> {
+            pauseMenu = new PauseMenu(
+                    () -> { /* continue — game is already running */ },
+                    () -> AppLifecycle.exit() // restart: simplest approach is full relaunch
+            );
+        });
     }
 
     @Override
     public void simpleUpdate(final float tpf) {
         Main.CONTROLLER.update();
+
+        handleStartButton();
+
         Main.PLAYER.update();
         Main.CAMERA.update(Main.PLAYER);
 
@@ -56,5 +79,22 @@ public final class GameApplication extends SimpleApplication {
         Main.THIRD_PERSON_CAMERA.update(cam);
 
         hitFlash.update(tpf);
+    }
+
+    @Override
+    public void destroy() {
+        super.destroy();
+        AppLifecycle.exit();
+    }
+
+    private void handleStartButton() {
+        if (Main.CONTROLLER.isButtonPressed("START") && pauseMenu != null) {
+            javax.swing.SwingUtilities.invokeLater(() -> {
+                System.out.println("start button pressed");
+                if (!pauseMenu.isVisible()) {
+                    pauseMenu.setVisible(true);
+                }
+            });
+        }
     }
 }

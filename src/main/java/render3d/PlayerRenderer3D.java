@@ -1,3 +1,4 @@
+// ===== render3d/PlayerRenderer3D.java =====
 package render3d;
 
 import com.jme3.material.Material;
@@ -11,7 +12,6 @@ public final class PlayerRenderer3D {
 
     private static final float  WIDTH        = 1.0f;
     private static final float  HEIGHT       = 1.0f;
-    private static final float  Y_BASE       = HEIGHT / 2f;
     private static final String TEXTURE_PATH = "Textures/sprites/player.png";
 
     private static Geometry playerGeo;
@@ -36,6 +36,6 @@ public final class PlayerRenderer3D {
     public static void update() {
         BillboardRenderer3D.faceCamera(playerGeo,
                 Main.PLAYER.getX(), Main.PLAYER.getY(),
-                Y_BASE + Main.PLAYER.getBobOffset());
+                Main.PLAYER.getBobOffset());
     }
 }

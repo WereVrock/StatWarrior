@@ -1,3 +1,4 @@
+// ===== entity/Player.java =====
 package entity;
 
 import balance.Balance;
@@ -111,9 +112,9 @@ public final class Player {
 
     private void updateBob() {
         final float speed = (float) Math.sqrt(vx * vx + vy * vy);
-        if (speed > Balance.BOB_SPEED_THRESHOLD) {
+        if (speed > BobConstants.SPEED_THRESHOLD) {
             bobTimer += speed * 0.016f;
-            bobOffset = (float) Math.sin(bobTimer * Balance.BOB_FREQUENCY) * Balance.BOB_MAGNITUDE;
+            bobOffset = (float) Math.sin(bobTimer * BobConstants.FREQUENCY) * BobConstants.MAGNITUDE;
         } else {
             bobTimer  = 0f;
             bobOffset = 0f;
