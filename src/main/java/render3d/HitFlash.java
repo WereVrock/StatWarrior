@@ -1,6 +1,7 @@
 package render3d;
 
 import com.jme3.material.Material;
+import com.jme3.material.RenderState;
 import com.jme3.math.ColorRGBA;
 import com.jme3.scene.Geometry;
 import com.jme3.scene.shape.Quad;
@@ -24,13 +25,10 @@ public final class HitFlash {
                 "Common/MatDefs/Misc/Unshaded.j3md"
         );
         mat.setColor("Color", new ColorRGBA(1f, 0f, 0f, 0f));
-        mat.getAdditionalRenderState().setBlendMode(
-                com.jme3.material.RenderState.BlendMode.Alpha
-        );
+        mat.getAdditionalRenderState().setBlendMode(RenderState.BlendMode.Alpha);
 
         quad.setMaterial(mat);
         quad.setLocalTranslation(0f, 0f, 0f);
-
         GameApplication.APP.getGuiNode().attachChild(quad);
     }
 
@@ -40,7 +38,6 @@ public final class HitFlash {
 
     public void update(final float tpf) {
         if (timer <= 0f) return;
-
         timer -= tpf;
         final float alpha = Math.max(0f, (timer / FLASH_DURATION) * MAX_ALPHA);
         mat.setColor("Color", new ColorRGBA(1f, 0f, 0f, alpha));

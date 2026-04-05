@@ -22,8 +22,8 @@ public final class Enemy {
     private float   lastKnownX, lastKnownY;
     private boolean hasLastKnown;
     private float   shakeOffset;
+    private int     shakeStep;
 
-    // melee return-to-origin
     private float meleeOriginX, meleeOriginY;
 
     private final AttackType        attackType;
@@ -37,15 +37,16 @@ public final class Enemy {
                  final int tileSize,      final String id,
                  final AttackType attackType,
                  final ProjectileManager projectileManager) {
-        this.id               = id;
-        this.attackType       = attackType;
+        this.id                = id;
+        this.attackType        = attackType;
         this.projectileManager = projectileManager;
-        this.body             = new EnemyBody(startX, startY, tileSize);
-        this.detector         = new EnemyDetector(body);
-        this.steer            = new EnemySteer(body);
-        this.state            = EnemyState.WANDER;
-        this.attackPhase      = AttackPhase.TELEGRAPH;
-        this.hasLastKnown     = false;
+        this.body              = new EnemyBody(startX, startY, tileSize);
+        this.detector          = new EnemyDetector(body);
+        this.steer             = new EnemySteer(body);
+        this.state             = EnemyState.WANDER;
+        this.attackPhase       = AttackPhase.TELEGRAPH;
+        this.hasLastKnown      = false;
+        this.shakeStep         = 0;
         pickNewWanderDir();
         log("Spawned at tile (" + (int)startX + ", " + (int)startY + ") type=" + attackType);
     }
@@ -58,7 +59,7 @@ public final class Enemy {
         }
         final boolean lunging = state == EnemyState.ATTACK
                 && attackPhase == AttackPhase.EXECUTE
-                && attackType  == AttackType.CHARGE;
+                && (attackType == AttackType.CHARGE || attackType == AttackType.MELEE);
         body.applyPhysics(lunging);
         body.updateBob();
     }
@@ -72,10 +73,8 @@ public final class Enemy {
             enterChase();
             return;
         }
-
         wanderTimer -= tpf;
         if (wanderTimer <= 0f) pickNewWanderDir();
-
         body.accelerate(wanderDirX * Balance.ENEMY_ACCELERATION,
                         wanderDirY * Balance.ENEMY_ACCELERATION);
         steer.applyWallRepulsion();
@@ -163,13 +162,15 @@ public final class Enemy {
     }
 
     // =========================================================
-    //  ATTACK — dispatch
+    //  ATTACK dispatch
     // =========================================================
 
     private void enterAttack() {
-        state = EnemyState.ATTACK;
+        state       = EnemyState.ATTACK;
         attackPhase = AttackPhase.TELEGRAPH;
         attackTimer = Balance.ENEMY_ATTACK_TELEGRAPH_DURATION;
+        shakeStep   = 0;
+        shakeOffset = 0f;
         body.stop();
         log("State -> ATTACK type=" + attackType + " | Phase -> TELEGRAPH");
     }
@@ -197,6 +198,7 @@ public final class Enemy {
             });
             case EXECUTE -> {
                 attackTimer -= tpf;
+                checkMeleeHit();
                 if (attackTimer <= 0f) {
                     body.stop();
                     launchToward(meleeOriginX, meleeOriginY, Balance.ENEMY_MELEE_RETURN_SPEED);
@@ -216,6 +218,16 @@ public final class Enemy {
         }
     }
 
+    private void checkMeleeHit() {
+        final float dx     = (Main.PLAYER.getX() + body.getTileSize() / 2f) - body.centerX();
+        final float dy     = (Main.PLAYER.getY() + body.getTileSize() / 2f) - body.centerY();
+        final float distSq = dx * dx + dy * dy;
+        final float range  = Balance.ENEMY_MELEE_HIT_RADIUS * body.getTileSize();
+        if (distSq <= range * range) {
+            Main.PLAYER_MANAGER.getsHit();
+        }
+    }
+
     // =========================================================
     //  RANGED
     // =========================================================
@@ -225,7 +237,7 @@ public final class Enemy {
             case TELEGRAPH -> updateTelegraph(tpf, () -> {
                 fireProjectile();
                 transitionTo(AttackPhase.COOLDOWN, Balance.ENEMY_ATTACK_COOLDOWN);
-                log("Ranged | fired projectile -> COOLDOWN");
+                log("Ranged | fired -> COOLDOWN");
             });
             case COOLDOWN -> updateCooldown(tpf);
             default -> { }
@@ -237,7 +249,6 @@ public final class Enemy {
         final float dy   = (Main.PLAYER.getY() + body.getTileSize() / 2f) - body.centerY();
         final float dist = dist(0, 0, dx, dy);
         if (dist < 1f) return;
-
         projectileManager.spawn(body.centerX(), body.centerY(), dx / dist, dy / dist);
     }
 
@@ -254,6 +265,7 @@ public final class Enemy {
             });
             case EXECUTE -> {
                 attackTimer -= tpf;
+                checkChargeHit();
                 if (attackTimer <= 0f) {
                     body.stop();
                     transitionTo(AttackPhase.COOLDOWN, Balance.ENEMY_ATTACK_COOLDOWN);
@@ -265,13 +277,32 @@ public final class Enemy {
         }
     }
 
+    private void checkChargeHit() {
+        final float dx     = (Main.PLAYER.getX() + body.getTileSize() / 2f) - body.centerX();
+        final float dy     = (Main.PLAYER.getY() + body.getTileSize() / 2f) - body.centerY();
+        final float distSq = dx * dx + dy * dy;
+        final float range  = Balance.ENEMY_CHARGE_HIT_RADIUS * body.getTileSize();
+        if (distSq <= range * range) {
+            Main.PLAYER_MANAGER.getsHit();
+        }
+    }
+
     // =========================================================
     //  SHARED ATTACK HELPERS
     // =========================================================
 
     private void updateTelegraph(final float tpf, final Runnable onComplete) {
         attackTimer -= tpf;
-        shakeOffset = (float)(Math.sin(attackTimer * 80f) * Balance.ENEMY_ATTACK_SHAKE_MAGNITUDE);
+
+        // Discrete left-right shake: flip once per SHAKE_INTERVAL seconds
+        final float elapsed  = Balance.ENEMY_ATTACK_TELEGRAPH_DURATION - attackTimer;
+        final int   newStep  = (int)(elapsed / Balance.ENEMY_SHAKE_INTERVAL);
+        if (newStep != shakeStep) {
+            shakeStep   = newStep;
+            shakeOffset = (shakeStep % 2 == 0)
+                    ? Balance.ENEMY_SHAKE_AMOUNT
+                    : -Balance.ENEMY_SHAKE_AMOUNT;
+        }
 
         if (!detector.canDetectPlayer()) {
             shakeOffset = 0f;
@@ -323,10 +354,6 @@ public final class Enemy {
         }
     }
 
-    // =========================================================
-    //  HELPERS
-    // =========================================================
-
     private static float dist(final float x1, final float y1,
                                final float x2, final float y2) {
         final float dx = x2 - x1;
@@ -338,10 +365,10 @@ public final class Enemy {
         System.out.println("[" + id + "] " + msg);
     }
 
-    public float getX()           { return body.getX(); }
-    public float getY()           { return body.getY(); }
-    public float getShakeOffset() { return shakeOffset; }
-    public float getBobOffset()   { return body.getBobOffset(); }
-    public EnemyState getState()  { return state; }
+    public float     getX()           { return body.getX(); }
+    public float     getY()           { return body.getY(); }
+    public float     getShakeOffset() { return shakeOffset; }
+    public float     getBobOffset()   { return body.getBobOffset(); }
+    public EnemyState getState()      { return state; }
     public AttackType getAttackType() { return attackType; }
 }

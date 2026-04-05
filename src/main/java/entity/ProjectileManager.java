@@ -28,6 +28,7 @@ public final class ProjectileManager {
 
             if (p.hitsPlayer()) {
                 playerHitThisFrame = true;
+               
                 p.kill();
             }
 
