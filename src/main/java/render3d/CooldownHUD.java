@@ -21,8 +21,7 @@ import java.nio.ShortBuffer;
 
 /**
  * Two radial cooldown indicators, bottom-center of screen.
- * Parry icon has a green border indicator that drains top-to-bottom
- * while parry is active.
+ * Parry icon has a green circle that drains clockwise as the parry duration expires.
  *
  * Icon images:
  *   assets/Textures/hud/icon_dodge.png   (64x64)
@@ -36,34 +35,35 @@ public final class CooldownHUD {
     private static final float BOTTOM_MARGIN = 20f;
     private static final int   SEGMENTS      = 64;
 
-    /** Thickness of the parry active border in pixels. */
-    private static final float BORDER_THICK  = 4f;
+    /** Radius of the parry duration circle indicator, in pixels. */
+    private static final float PARRY_CIRCLE_RADIUS = RING_SIZE / 2f + 6f;
 
-    private static final ColorRGBA RING_TRACK    = new ColorRGBA(0.08f, 0.06f, 0.06f, 0.75f);
-    private static final ColorRGBA RING_READY    = new ColorRGBA(0.72f, 0.58f, 0.22f, 1.00f);
-    private static final ColorRGBA RING_FILL     = new ColorRGBA(0.55f, 0.14f, 0.14f, 1.00f);
-    private static final ColorRGBA ICON_BRIGHT   = new ColorRGBA(1.00f, 1.00f, 1.00f, 0.90f);
-    private static final ColorRGBA ICON_DIM      = new ColorRGBA(0.35f, 0.35f, 0.35f, 0.70f);
-    private static final ColorRGBA PARRY_ACTIVE  = new ColorRGBA(0.20f, 0.90f, 0.30f, 1.00f);
+    /** Thickness of the parry circle stroke in pixels. */
+    private static final float PARRY_CIRCLE_THICK  = 4f;
+
+    private static final ColorRGBA RING_TRACK   = new ColorRGBA(0.08f, 0.06f, 0.06f, 0.75f);
+    private static final ColorRGBA RING_READY   = new ColorRGBA(0.72f, 0.58f, 0.22f, 1.00f);
+    private static final ColorRGBA RING_FILL    = new ColorRGBA(0.55f, 0.14f, 0.14f, 1.00f);
+    private static final ColorRGBA ICON_BRIGHT  = new ColorRGBA(1.00f, 1.00f, 1.00f, 0.90f);
+    private static final ColorRGBA ICON_DIM     = new ColorRGBA(0.35f, 0.35f, 0.35f, 0.70f);
+    private static final ColorRGBA PARRY_ACTIVE = new ColorRGBA(0.20f, 0.90f, 0.30f, 1.00f);
 
     private final RadialRing dodgeRing;
     private final RadialRing parryRing;
     private final Geometry   dodgeIcon;
     private final Geometry   parryIcon;
 
-    /** Four quads forming the parry active border around the parry ring. */
-    private final Geometry parryBorderLeft;
-    private final Geometry parryBorderRight;
-    private final Geometry parryBorderBottom;
-    /** Top border drains from full-height down to zero as duration expires. */
-    private final Geometry parryBorderTop;
-
-    /** Stored so update() can reposition the top border. */
-    private final float parryRingBaseY;
-    private final float parryCX;
+    /** Clockwise-draining circle arc rendered on top of the parry ring while parrying. */
+    private final Geometry   parryCircle;
+    private final float      parryCX;
+    private final float      parryCY;
+    private final Node       guiNode;
+    private final AssetManager assets;
 
     public CooldownHUD(final Node guiNode, final AssetManager assets,
                        final float screenW, final float screenH) {
+        this.guiNode = guiNode;
+        this.assets  = assets;
 
         final float totalW = RING_SIZE * 2f + GAP;
         final float startX = screenW / 2f - totalW / 2f;
@@ -72,7 +72,7 @@ public final class CooldownHUD {
         final float dodgeCX = startX + RING_SIZE / 2f;
         parryCX             = startX + RING_SIZE + GAP + RING_SIZE / 2f;
         final float ringCY  = baseY + RING_SIZE / 2f;
-        parryRingBaseY      = baseY;
+        parryCY             = ringCY;
 
         dodgeRing = new RadialRing(assets, RING_SIZE, SEGMENTS);
         parryRing = new RadialRing(assets, RING_SIZE, SEGMENTS);
@@ -90,34 +90,27 @@ public final class CooldownHUD {
         parryIcon.setLocalTranslation(
                 parryCX - ICON_SIZE / 2f, ringCY - ICON_SIZE / 2f, 1f);
 
-        // Parry border quads — drawn at z=2 so they appear in front of rings
-        final float bx = parryCX - RING_SIZE / 2f; // ring left edge X
-        final float by = parryRingBaseY;            // ring bottom edge Y
-
-        parryBorderLeft   = buildColorQuad(assets, BORDER_THICK, RING_SIZE,  PARRY_ACTIVE);
-        parryBorderRight  = buildColorQuad(assets, BORDER_THICK, RING_SIZE,  PARRY_ACTIVE);
-        parryBorderBottom = buildColorQuad(assets, RING_SIZE,    BORDER_THICK, PARRY_ACTIVE);
-        parryBorderTop    = buildColorQuad(assets, RING_SIZE,    BORDER_THICK, PARRY_ACTIVE);
-
-        parryBorderLeft  .setLocalTranslation(bx - BORDER_THICK, by, 2f);
-        parryBorderRight .setLocalTranslation(bx + RING_SIZE,    by, 2f);
-        parryBorderBottom.setLocalTranslation(bx, by - BORDER_THICK, 2f);
-        parryBorderTop   .setLocalTranslation(bx, by + RING_SIZE,    2f);
+        // Parry duration circle — rebuilt every frame while parrying
+        parryCircle = new Geometry("ParryCircle", buildCircleArc(0, SEGMENTS));
+        final Material circleMat = new Material(
+                assets, "Common/MatDefs/Misc/Unshaded.j3md");
+        circleMat.setColor("Color", PARRY_ACTIVE);
+        circleMat.getAdditionalRenderState().setBlendMode(RenderState.BlendMode.Alpha);
+        parryCircle.setMaterial(circleMat);
+        parryCircle.setLocalTranslation(parryCX, parryCY, 3f);
+        parryCircle.setCullHint(com.jme3.scene.Spatial.CullHint.Always);
 
         guiNode.attachChild(dodgeRing.getNode());
         guiNode.attachChild(parryRing.getNode());
         guiNode.attachChild(dodgeIcon);
         guiNode.attachChild(parryIcon);
-        guiNode.attachChild(parryBorderLeft);
-        guiNode.attachChild(parryBorderRight);
-        guiNode.attachChild(parryBorderBottom);
-        guiNode.attachChild(parryBorderTop);
+        guiNode.attachChild(parryCircle);
     }
 
     public void update() {
-        final PlayerActions a      = Main.PLAYER.getActions();
-        final float         dodge  = a.getDodgeCooldownFraction();
-        final float         parry  = a.getParryCooldownFraction();
+        final PlayerActions a     = Main.PLAYER.getActions();
+        final float         dodge = a.getDodgeCooldownFraction();
+        final float         parry = a.getParryCooldownFraction();
         final boolean       active = a.isParrying();
 
         dodgeRing.setFraction(dodge, dodge >= 1f ? RING_READY : RING_FILL);
@@ -128,50 +121,95 @@ public final class CooldownHUD {
         parryIcon.getMaterial().setColor(
                 "Color", parry >= 1f ? ICON_BRIGHT : ICON_DIM);
 
-        updateParryBorder(active, a.getParryDurationFraction());
+        updateParryCircle(active, a.getParryDurationFraction());
     }
 
     /**
-     * Shows or hides the parry border.
-     * When active, the top bar scales down from RING_SIZE to 0 as duration expires.
-     * Left, right, and bottom bars are always full while active.
-     *
-     * @param active           true while the player is in the PARRYING state
-     * @param durationFraction 1.0 = full duration remaining, 0.0 = expired
+     * Rebuilds the parry duration circle arc each frame.
+     * Starts full (clockwise from top) and drains clockwise as duration expires.
+     * fraction=1.0 → full circle; fraction=0.0 → empty.
      */
-    private void updateParryBorder(final boolean active, final float durationFraction) {
-        final com.jme3.scene.Spatial.CullHint hint =
-                active ? com.jme3.scene.Spatial.CullHint.Inherit
-                       : com.jme3.scene.Spatial.CullHint.Always;
+    private void updateParryCircle(final boolean active, final float durationFraction) {
+        if (!active) {
+            parryCircle.setCullHint(com.jme3.scene.Spatial.CullHint.Always);
+            return;
+        }
 
-        parryBorderLeft  .setCullHint(hint);
-        parryBorderRight .setCullHint(hint);
-        parryBorderBottom.setCullHint(hint);
-        parryBorderTop   .setCullHint(hint);
+        parryCircle.setCullHint(com.jme3.scene.Spatial.CullHint.Inherit);
+        final int steps = Math.round(FastMath.clamp(durationFraction, 0f, 1f) * SEGMENTS);
+        parryCircle.setMesh(buildCircleArc(steps, SEGMENTS));
+    }
 
-        if (!active) return;
+    /**
+     * Builds a clockwise arc ring (annulus) starting from the top (12 o'clock).
+     * Outer radius = PARRY_CIRCLE_RADIUS, inner radius = outer - PARRY_CIRCLE_THICK.
+     * steps=0 → empty; steps=SEGMENTS → full circle.
+     */
+    private static Mesh buildCircleArc(final int steps, final int totalSegs) {
+        if (steps <= 0) {
+            final Mesh m = new Mesh();
+            m.setBuffer(VertexBuffer.Type.Position, 3,
+                    BufferUtils.createFloatBuffer(new float[]{ 0f, 0f, 0f }));
+            m.setBuffer(VertexBuffer.Type.Normal,   3,
+                    BufferUtils.createFloatBuffer(new float[]{ 0f, 0f, 1f }));
+            m.setBuffer(VertexBuffer.Type.TexCoord, 2,
+                    BufferUtils.createFloatBuffer(new float[]{ 0f, 0f }));
+            m.setBuffer(VertexBuffer.Type.Index,    3,
+                    BufferUtils.createShortBuffer(new short[0]));
+            m.updateBound();
+            return m;
+        }
 
-        // Side and bottom bars are always full — no scale needed.
-        // Side bars scale their height with duration (they drain from top to bottom).
-        // Bottom bar stays full.
-        // Top bar scales its width from full to zero (it shrinks, giving the
-        // "disappears from top to bottom" feel together with side bars shrinking).
+        final float outerR = PARRY_CIRCLE_RADIUS;
+        final float innerR = outerR - PARRY_CIRCLE_THICK;
 
-        // The sides drain: full height at fraction=1, zero at fraction=0.
-        // Scale Y of left/right bars — their origin is at the bottom, so they shrink upward.
-        final float sideScale = Math.max(0f, durationFraction);
-        parryBorderLeft .setLocalScale(1f, sideScale, 1f);
-        parryBorderRight.setLocalScale(1f, sideScale, 1f);
+        // Each step = 2 verts (outer + inner), plus closing pair
+        final int vertCount = (steps + 1) * 2;
+        final FloatBuffer pos  = BufferUtils.createFloatBuffer(vertCount * 3);
+        final FloatBuffer norm = BufferUtils.createFloatBuffer(vertCount * 3);
+        final FloatBuffer uv   = BufferUtils.createFloatBuffer(vertCount * 2);
+        // Each segment = 2 triangles = 6 indices
+        final ShortBuffer idx  = BufferUtils.createShortBuffer(steps * 6);
 
-        // Top bar: only visible while the sides are still at full height, then vanishes.
-        // Simpler: the top bar itself shrinks in width from center outward — but per the
-        // spec "disappears from top to bottom" means the rectangle outline fills like a
-        // gauge. Implementing: side bars drain downward, top bar disappears first.
-        // We show the top bar only at high fraction (it disappears before the sides finish).
-        parryBorderTop.setCullHint(
-                durationFraction > 0.05f
-                        ? com.jme3.scene.Spatial.CullHint.Inherit
-                        : com.jme3.scene.Spatial.CullHint.Always);
+        for (int i = 0; i <= steps; i++) {
+            // Clockwise from top: start at -HALF_PI, go in positive direction
+            final float angle = -FastMath.HALF_PI + FastMath.TWO_PI * i / totalSegs;
+            final float cosA  = FastMath.cos(angle);
+            final float sinA  = FastMath.sin(angle);
+
+            // Outer vertex
+            pos.put(cosA * outerR).put(sinA * outerR).put(0f);
+            norm.put(0f).put(0f).put(1f);
+            uv.put(0.5f + cosA * 0.5f).put(0.5f + sinA * 0.5f);
+
+            // Inner vertex
+            pos.put(cosA * innerR).put(sinA * innerR).put(0f);
+            norm.put(0f).put(0f).put(1f);
+            uv.put(0.5f + cosA * 0.5f * (innerR / outerR))
+              .put(0.5f + sinA * 0.5f * (innerR / outerR));
+        }
+
+        for (int i = 0; i < steps; i++) {
+            final short o0 = (short)(i * 2);      // outer current
+            final short i0 = (short)(i * 2 + 1);  // inner current
+            final short o1 = (short)(i * 2 + 2);  // outer next
+            final short i1 = (short)(i * 2 + 3);  // inner next
+
+            // Triangle 1: outer-cur, outer-next, inner-cur
+            idx.put(o0).put(o1).put(i0);
+            // Triangle 2: inner-cur, outer-next, inner-next
+            idx.put(i0).put(o1).put(i1);
+        }
+
+        pos.flip(); norm.flip(); uv.flip(); idx.flip();
+
+        final Mesh m = new Mesh();
+        m.setBuffer(VertexBuffer.Type.Position, 3, pos);
+        m.setBuffer(VertexBuffer.Type.Normal,   3, norm);
+        m.setBuffer(VertexBuffer.Type.TexCoord, 2, uv);
+        m.setBuffer(VertexBuffer.Type.Index,    3, idx);
+        m.updateBound();
+        return m;
     }
 
     private static Geometry buildIcon(final AssetManager assets, final String path) {
@@ -188,20 +226,8 @@ public final class CooldownHUD {
         return geo;
     }
 
-    private static Geometry buildColorQuad(final AssetManager assets,
-                                           final float w, final float h,
-                                           final ColorRGBA color) {
-        final Geometry geo = new Geometry("Border", new Quad(w, h));
-        final Material mat = new Material(
-                assets, "Common/MatDefs/Misc/Unshaded.j3md");
-        mat.setColor("Color", color);
-        mat.getAdditionalRenderState().setBlendMode(RenderState.BlendMode.Alpha);
-        geo.setMaterial(mat);
-        return geo;
-    }
-
     // =========================================================
-    //  RadialRing
+    //  RadialRing — filled pie arc, used for cooldown display
     // =========================================================
 
     private static final class RadialRing {

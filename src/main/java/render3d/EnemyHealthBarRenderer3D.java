@@ -18,19 +18,26 @@ import java.util.List;
 
 /**
  * World-space health bars floating above each enemy sprite, always facing
- * the camera and rendered in front of the sprite via a Z offset toward the
- * camera.
+ * the camera. Position matches the sprite exactly (same logic as BillboardRenderer3D)
+ * with a vertical offset so the bar floats just above the sprite top without touching.
  */
 public final class EnemyHealthBarRenderer3D {
 
-    private static final float BAR_WIDTH    = 0.8f;
-    private static final float BAR_HEIGHT   = 0.07f;
-    /** How far above the sprite base the bar floats. */
-    private static final float BAR_Y_ABOVE  = 1.25f;
-    /** Push bar toward the camera by this amount so it never clips the sprite. */
-    private static final float CAM_OFFSET   = 0.00f;
+    private static final float BAR_WIDTH   = 0.8f;
+    private static final float BAR_HEIGHT  = 0.07f;
+
+    /** Sprite height in world units (must match BillboardRenderer3D / EnemyRenderer3D). */
+    private static final float SPRITE_HEIGHT = 1.0f;
+
+    /** Gap between sprite top and bar bottom, in world units. */
+    private static final float BAR_GAP     = 0.12f;
+
+    /** Y position = sprite top + gap. Sprite sits on FLOOR_TOP_Y. */
+    private static final float FLOOR_TOP_Y = 0.2f;
+    private static final float BAR_Y       = FLOOR_TOP_Y + SPRITE_HEIGHT + BAR_GAP;
+
     /** Fill is rendered slightly in front of background in the bar's local plane. */
-    private static final float FILL_Z       = 0.005f;
+    private static final float FILL_Z      = 0.005f;
 
     private static final ColorRGBA BG_COLOR   = new ColorRGBA(0.10f, 0.05f, 0.05f, 0.85f);
     private static final ColorRGBA FILL_COLOR = new ColorRGBA(0.70f, 0.12f, 0.12f, 1.00f);
@@ -67,7 +74,6 @@ public final class EnemyHealthBarRenderer3D {
             final Enemy enemy = enemies.get(i);
             final Bar   bar   = bars.get(i);
 
-            // Hide bars for enemies whose death animation is complete
             final boolean hide = enemy.getHealth().isDeathAnimDone();
             final com.jme3.scene.Spatial.CullHint hint =
                     hide ? com.jme3.scene.Spatial.CullHint.Always
@@ -76,52 +82,48 @@ public final class EnemyHealthBarRenderer3D {
             bar.fill.setCullHint(hint);
             if (hide) continue;
 
-            final float geoX = enemy.getX() / 32f + 0.5f; // sprite center X
-            final float geoZ = enemy.getY() / 32f + 0.5f; // sprite center Z
-            final float geoY = BAR_Y_ABOVE;
+            // Mirror BillboardRenderer3D.faceCamera() to get the exact same world position
+            // as the sprite, then raise to BAR_Y.
+            final float geoX = enemy.getX() / 32f;
+            final float geoZ = enemy.getY() / 32f;
 
-            // Direction from sprite to camera (horizontal only)
-            final float toCamX = camPos.x - geoX;
-            final float toCamZ = camPos.z - geoZ;
-            final float toCamLen = (float) Math.sqrt(toCamX * toCamX + toCamZ * toCamZ);
-            final float normCamX = toCamLen > 0.001f ? toCamX / toCamLen : 0f;
-            final float normCamZ = toCamLen > 0.001f ? toCamZ / toCamLen : 1f;
+            final float dx  = camPos.x - geoX;
+            final float dz  = camPos.z - geoZ;
+            final float yaw = FastMath.atan2(dx, dz);
 
-            // Billboard yaw — bar faces camera
-            final float yaw = FastMath.atan2(toCamX, toCamZ);
             final Quaternion rot = new Quaternion();
             rot.fromAngles(0f, yaw, 0f);
 
-            // Right vector in world space (perpendicular to cam direction, horizontal)
+            // Sprite center X in world space (sprite left edge = geoX - rightX*halfW)
+            // Bar should be centered on sprite, so we use sprite center = geoX + halfW offset
             final float rightX =  FastMath.cos(yaw);
             final float rightZ = -FastMath.sin(yaw);
 
-            // Push the bar slightly toward the camera so it is always in front
-            final float nudgeX = normCamX * CAM_OFFSET;
-            final float nudgeZ = normCamZ * CAM_OFFSET;
+            // Sprite left edge world pos (same as BillboardRenderer3D)
+            final float spriteLeftX = geoX - rightX * (BAR_WIDTH / 2f);
+            final float spriteLeftZ = geoZ - rightZ * (BAR_WIDTH / 2f);
 
-            // Background: left edge anchored, full width
-            final Vector3f bgPos = new Vector3f(
-                    geoX - rightX * BAR_WIDTH / 2f + nudgeX,
-                    geoY,
-                    geoZ - rightZ * BAR_WIDTH / 2f + nudgeZ);
+            // Camera-facing direction (normalized, horizontal)
+            final float toCamLen = (float) Math.sqrt(dx * dx + dz * dz);
+            final float normCamX = toCamLen > 0.001f ? dx / toCamLen : 0f;
+            final float normCamZ = toCamLen > 0.001f ? dz / toCamLen : 1f;
+
+            // Background: anchored at bar left edge, at BAR_Y height
+            final Vector3f bgPos = new Vector3f(spriteLeftX, BAR_Y, spriteLeftZ);
             bar.bg.setLocalTranslation(bgPos);
             bar.bg.setLocalRotation(rot);
 
-            // Fill: left-anchored, scaled to health fraction
+            // Fill: same anchor, scaled to health fraction, nudged toward camera
             final float fraction = enemy.getHealth().getFraction();
             bar.fill.setLocalScale(Math.max(0f, fraction), 1f, 1f);
 
-            // The Quad origin is at its left edge, so the fill left edge = bg left edge.
-            // We push it slightly in front of the background along the cam direction.
             final Vector3f fillPos = new Vector3f(
                     bgPos.x + normCamX * FILL_Z,
-                    geoY,
+                    BAR_Y,
                     bgPos.z + normCamZ * FILL_Z);
             bar.fill.setLocalTranslation(fillPos);
             bar.fill.setLocalRotation(rot);
 
-            // Dead tint
             if (enemy.getHealth().isDead()) {
                 bar.fill.getMaterial().setColor("Color", DEAD_COLOR);
             } else {

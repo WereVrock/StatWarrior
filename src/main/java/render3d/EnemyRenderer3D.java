@@ -7,27 +7,33 @@ import com.jme3.math.FastMath;
 import com.jme3.math.Quaternion;
 import com.jme3.math.Vector3f;
 import com.jme3.scene.Geometry;
-import com.jme3.scene.Node;
 import com.jme3.scene.shape.Quad;
 import com.jme3.texture.Texture;
 import entity.AttackType;
 import entity.enemy.Enemy;
 import entity.enemy.EnemyManager;
+import main.Main;
 
 import java.util.ArrayList;
 import java.util.List;
 
 public final class EnemyRenderer3D {
 
-    private static final float  SPRITE_WIDTH   = 1.0f;
-    private static final float  SPRITE_HEIGHT  = 1.0f;
-    private static final String TEXTURE_MELEE  = "Textures/sprites/enemy_melee.png";
-    private static final String TEXTURE_RANGED = "Textures/sprites/enemy_ranged.png";
-    private static final String TEXTURE_CHARGE = "Textures/sprites/enemy_charge.png";
-    private static final String TEXTURE_ALL    = "Textures/sprites/enemy_all.png";
+    private static final float  SPRITE_WIDTH      = 1.0f;
+    private static final float  SPRITE_HEIGHT     = 1.0f;
+    private static final String TEXTURE_MELEE     = "Textures/sprites/enemy_melee.png";
+    private static final String TEXTURE_RANGED    = "Textures/sprites/enemy_ranged.png";
+    private static final String TEXTURE_CHARGE    = "Textures/sprites/enemy_charge.png";
+    private static final String TEXTURE_ALL       = "Textures/sprites/enemy_all.png";
 
     /** Max backward tilt in radians when the enemy dies (falls onto its back). */
     private static final float DEATH_TILT_MAX_ANGLE = FastMath.HALF_PI; // 90°
+
+    /**
+     * How far away from the player the enemy lands when it dies, in world units.
+     * The sprite's fall pivot is shifted away from the player by this amount.
+     */
+    private static final float DEATH_JUMP_DISTANCE = 5.55f;
 
     private static final List<Geometry> geos = new ArrayList<>();
 
@@ -59,7 +65,6 @@ public final class EnemyRenderer3D {
             final Geometry geo   = geos.get(i);
 
             if (enemy.getHealth().isDeathAnimDone()) {
-                // Hide sprite entirely once the fall animation has finished
                 geo.setCullHint(com.jme3.scene.Spatial.CullHint.Always);
                 continue;
             }
@@ -67,13 +72,10 @@ public final class EnemyRenderer3D {
             geo.setCullHint(com.jme3.scene.Spatial.CullHint.Inherit);
 
             if (enemy.getHealth().isDead()) {
-                // Play fall-back tilt: rotate around the local X axis (tip backward)
                 positionDeadSprite(geo, enemy);
             } else {
-                // Normal billboard facing camera
                 BillboardRenderer3D.faceCamera(geo, enemy.getX(), enemy.getY(),
                         enemy.getBobOffset());
-                // Apply attack shake on top
                 final Vector3f pos = geo.getLocalTranslation().clone();
                 pos.x += enemy.getShakeOffset();
                 geo.setLocalTranslation(pos);
@@ -82,31 +84,38 @@ public final class EnemyRenderer3D {
     }
 
     /**
-     * Rotates the sprite around its bottom edge so it falls onto its back.
-     * The pivot is at ground level (y=0) at the sprite's world position.
+     * Rotates the sprite around its bottom edge so it falls onto its back,
+     * shifted away from the player so it appears to jump/fly backward on death.
      */
     private static void positionDeadSprite(final Geometry geo, final Enemy enemy) {
         final float tilt = enemy.getHealth().getDeathTiltFraction() * DEATH_TILT_MAX_ANGLE;
 
-        final float worldX = enemy.getX() / 32f + SPRITE_WIDTH  / 2f;
-        final float worldZ = enemy.getY() / 32f + SPRITE_HEIGHT / 2f;
+        // Enemy world center
+        final float enemyWorldX = enemy.getX() / 32f + SPRITE_WIDTH  / 2f;
+        final float enemyWorldZ = enemy.getY() / 32f + SPRITE_HEIGHT / 2f;
 
-        // Tilt: the sprite rotates around the X axis (tips backward away from camera).
-        // We keep the bottom edge anchored at y=0 by offsetting after rotation.
-        // With rotation angle `tilt` around X:
-        //   new top Y  = cos(tilt) * SPRITE_HEIGHT
-        //   new top Z  = sin(tilt) * SPRITE_HEIGHT  (away from camera, positive Z = toward south)
-        final float cosT = FastMath.cos(tilt);
-        final float sinT = FastMath.sin(tilt);
+        // Player world center
+        final float playerWorldX = Main.PLAYER.centerX() / 32f;
+        final float playerWorldZ = Main.PLAYER.centerY() / 32f;
 
-        // Bottom-left corner stays at (worldX - W/2, 0, worldZ)
-        // Quad origin is bottom-left, so translation = bottom-left world position
-        geo.setLocalTranslation(
-                worldX - SPRITE_WIDTH / 2f,
-                0f,
-                worldZ);
+        // Direction from player to enemy (normalized, horizontal)
+        final float toEnemyX = enemyWorldX - playerWorldX;
+        final float toEnemyZ = enemyWorldZ - playerWorldZ;
+        final float toEnemyLen = (float) Math.sqrt(toEnemyX * toEnemyX + toEnemyZ * toEnemyZ);
+        final float normAwayX = toEnemyLen > 0.001f ? toEnemyX / toEnemyLen : 0f;
+        final float normAwayZ = toEnemyLen > 0.001f ? toEnemyZ / toEnemyLen : 1f;
 
-        // Rotate: tip the quad backward (negative X-axis rotation so top goes away)
+        // Shift the fall pivot away from the player, scaled by tilt progress
+        // so the enemy slides/jumps away as it falls
+        final float progress  = enemy.getHealth().getDeathTiltFraction();
+        final float offsetX   = normAwayX * DEATH_JUMP_DISTANCE * progress;
+        final float offsetZ   = normAwayZ * DEATH_JUMP_DISTANCE * progress;
+
+        final float pivotX = enemyWorldX - SPRITE_WIDTH / 2f + offsetX;
+        final float pivotZ = enemyWorldZ + offsetZ;
+
+        geo.setLocalTranslation(pivotX, 0f, pivotZ);
+
         final Quaternion rot = new Quaternion();
         rot.fromAngles(-tilt, 0f, 0f);
         geo.setLocalRotation(rot);
