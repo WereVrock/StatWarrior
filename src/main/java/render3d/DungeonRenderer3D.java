@@ -10,9 +10,6 @@ import com.jme3.util.BufferUtils;
 import dungeon.DungeonCell;
 import main.Main;
 
-import java.nio.FloatBuffer;
-import java.nio.ShortBuffer;
-
 public final class DungeonRenderer3D {
 
     private static final float TILE_SIZE    = 1f;
@@ -56,25 +53,12 @@ public final class DungeonRenderer3D {
 
     private enum Direction { NORTH, SOUTH, EAST, WEST }
 
-    /**
-     * Each wall face is a single quad placed exactly at the tile boundary.
-     * No inset — faces share the tile edge exactly so corners have zero gap.
-     *
-     * NORTH: face at z = tileCenter - HALF  (north edge of tile)
-     * SOUTH: face at z = tileCenter + HALF
-     * WEST:  face at x = tileCenter - HALF
-     * EAST:  face at x = tileCenter + HALF
-     *
-     * The quad spans 1 tile wide and WALL_HEIGHT tall.
-     * right vector determines which world axis the width runs along.
-     */
     private static void renderWallFace(final int x, final int y,
                                        final Direction dir,
                                        final Material mat) {
         final float cx = x * TILE_SIZE;
         final float cy = y * TILE_SIZE;
 
-        // Face center X/Z and the right-axis (width direction in world space)
         final float faceCX, faceCZ;
         final float rightX, rightZ;
 
@@ -86,28 +70,26 @@ public final class DungeonRenderer3D {
             default -> throw new IllegalArgumentException("Unknown direction");
         }
 
-        final float halfH  = WALL_HEIGHT / 2f;
-        final float uMax   = TILE_SIZE   * WALL_TEX_SCALE;
-        final float vMax   = WALL_HEIGHT * WALL_TEX_SCALE;
+        final float uMax = TILE_SIZE   * WALL_TEX_SCALE;
+        final float vMax = WALL_HEIGHT * WALL_TEX_SCALE;
 
-        // 4 verts: bottom-left, bottom-right, top-right, top-left
         final float[] pos = {
-            faceCX - rightX * HALF,  0f,        faceCZ - rightZ * HALF,
-            faceCX + rightX * HALF,  0f,        faceCZ + rightZ * HALF,
+            faceCX - rightX * HALF,  0f,          faceCZ - rightZ * HALF,
+            faceCX + rightX * HALF,  0f,          faceCZ + rightZ * HALF,
             faceCX + rightX * HALF,  WALL_HEIGHT, faceCZ + rightZ * HALF,
             faceCX - rightX * HALF,  WALL_HEIGHT, faceCZ - rightZ * HALF,
         };
 
         final float[] uvs = {
-            0f,    0f,
-            uMax,  0f,
-            uMax,  vMax,
-            0f,    vMax,
+            0f,   0f,
+            uMax, 0f,
+            uMax, vMax,
+            0f,   vMax,
         };
 
-        // Normal faces inward toward the dungeon (toward the open side)
         final float nX = -rightZ;
         final float nZ =  rightX;
+
         final float[] norms = {
             nX, 0f, nZ,
             nX, 0f, nZ,
@@ -141,12 +123,23 @@ public final class DungeonRenderer3D {
             cx + HALF, top, cy + HALF,
             cx - HALF, top, cy + HALF,
         };
-        final float[] uvs   = { 0f, 0f,  u, 0f,  u, u,  0f, u };
-        final float[] norms = {
-            0f, 1f, 0f,  0f, 1f, 0f,
-            0f, 1f, 0f,  0f, 1f, 0f,
+
+        final float[] uvs = {
+            0f, 0f,
+            u,  0f,
+            u,  u,
+            0f, u
         };
-        final short[] idx = { 0, 1, 2, 0, 2, 3 };
+
+        final float[] norms = {
+            0f, 1f, 0f,
+            0f, 1f, 0f,
+            0f, 1f, 0f,
+            0f, 1f, 0f,
+        };
+
+        // ✅ FIXED WINDING ORDER HERE
+        final short[] idx = { 0, 2, 1, 0, 3, 2 };
 
         final Mesh mesh = new Mesh();
         mesh.setBuffer(VertexBuffer.Type.Position, 3, BufferUtils.createFloatBuffer(pos));
@@ -164,9 +157,11 @@ public final class DungeonRenderer3D {
         final Material mat = new Material(
                 GameApplication.APP.getAssetManager(),
                 "Common/MatDefs/Misc/Unshaded.j3md");
+
         final Texture tex = GameApplication.APP.getAssetManager().loadTexture(texturePath);
         tex.setWrap(Texture.WrapMode.Repeat);
         mat.setTexture("ColorMap", tex);
+
         return mat;
     }
 }
