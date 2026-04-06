@@ -16,8 +16,10 @@ public final class GameApplication extends SimpleApplication {
     private CooldownHUD cooldownHUD;
     private PlayerHUD playerHUD;
     private EnemyHealthBarRenderer3D enemyHealthBars;
+    private YouDiedOverlay youDiedOverlay;
 
-    private boolean paused = false;
+    private boolean paused     = false;
+    private boolean playerDead = false;
 
     private final Map<String, Boolean> lastButtons = new HashMap<>();
 
@@ -68,8 +70,8 @@ public final class GameApplication extends SimpleApplication {
         DungeonRenderer3D.renderDungeon();
         PlayerRenderer3D.init();
         EnemyRenderer3D.init(Main.ENEMY_MANAGER);
+        EnemyShadowRenderer3D.init(Main.ENEMY_MANAGER);
 
-        // ✅ FIRST PERSON CAMERA ONLY
         Main.FIRST_PERSON_CAMERA.init(cam);
 
         hitFlash = new HitFlash(settings);
@@ -89,16 +91,30 @@ public final class GameApplication extends SimpleApplication {
         guiNode.attachChild(pauseMenu.getNode());
         pauseMenu.hide();
 
+        youDiedOverlay = new YouDiedOverlay(
+                guiNode,
+                assetManager.loadFont("Interface/Fonts/Default.fnt"),
+                settings.getWidth(),
+                settings.getHeight(),
+                this::restartGame,
+                AppLifecycle::exit
+        );
+
         cooldownHUD = new CooldownHUD(guiNode, assetManager,
                 settings.getWidth(), settings.getHeight());
 
         playerHUD = new PlayerHUD(guiNode, assetManager, settings.getHeight());
+
+        paused     = false;
+        playerDead = false;
     }
 
     private void restartGame() {
-        paused = false;
+        paused     = false;
+        playerDead = false;
         lastButtons.clear();
         resetTimers();
+        youDiedOverlay.hide();
         Main.restart();
         simpleInitApp();
     }
@@ -106,6 +122,12 @@ public final class GameApplication extends SimpleApplication {
     @Override
     public void simpleUpdate(final float tpf) {
         Main.CONTROLLER.update();
+
+        // Death screen takes priority over everything
+        if (playerDead) {
+            youDiedOverlay.update(tpf);
+            return;
+        }
 
         handlePauseToggle();
         handleMenuInput(tpf);
@@ -117,15 +139,24 @@ public final class GameApplication extends SimpleApplication {
 
         PlayerRenderer3D.update();
         EnemyRenderer3D.update(Main.ENEMY_MANAGER);
+        EnemyShadowRenderer3D.update(Main.ENEMY_MANAGER);
         ProjectileRenderer3D.update(Main.ENEMY_MANAGER.getProjectileManager());
 
-        // ✅ ONLY CAMERA THAT EXISTS NOW
         Main.FIRST_PERSON_CAMERA.update();
 
         hitFlash.update(tpf);
         cooldownHUD.update();
         playerHUD.update();
         enemyHealthBars.update(Main.ENEMY_MANAGER);
+
+        checkPlayerDeath();
+    }
+
+    private void checkPlayerDeath() {
+        if (Main.PLAYER.getStats().isDead()) {
+            playerDead = true;
+            youDiedOverlay.show();
+        }
     }
 
     private void handlePauseToggle() {
@@ -183,9 +214,9 @@ public final class GameApplication extends SimpleApplication {
     }
 
     private void resetTimers() {
-        upHeld = false;
-        downHeld = false;
-        upTimer = 0f;
+        upHeld    = false;
+        downHeld  = false;
+        upTimer   = 0f;
         downTimer = 0f;
     }
 
