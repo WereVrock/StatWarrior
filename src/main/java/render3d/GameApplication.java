@@ -12,9 +12,11 @@ public final class GameApplication extends SimpleApplication {
 
     public static GameApplication APP;
 
-    private HitFlash    hitFlash;
-    private PauseMenu   pauseMenu;
-    private CooldownHUD cooldownHUD;
+    private HitFlash               hitFlash;
+    private PauseMenu              pauseMenu;
+    private CooldownHUD            cooldownHUD;
+    private PlayerHUD              playerHUD;
+    private EnemyHealthBarRenderer3D enemyHealthBars;
 
     private boolean paused = false;
 
@@ -23,10 +25,10 @@ public final class GameApplication extends SimpleApplication {
     private static final float INITIAL_DELAY = 0.25f;
     private static final float REPEAT_RATE   = 0.12f;
 
-    private float upTimer   = 0f;
-    private float downTimer = 0f;
-    private boolean upHeld   = false;
-    private boolean downHeld = false;
+    private float   upTimer   = 0f;
+    private float   downTimer = 0f;
+    private boolean upHeld    = false;
+    private boolean downHeld  = false;
 
     public GameApplication() {
         APP = this;
@@ -70,6 +72,9 @@ public final class GameApplication extends SimpleApplication {
         hitFlash = new HitFlash(settings);
         Main.PLAYER_MANAGER.init(hitFlash);
 
+        enemyHealthBars = new EnemyHealthBarRenderer3D();
+        enemyHealthBars.init(Main.ENEMY_MANAGER, assetManager);
+
         pauseMenu = new PauseMenu(
                 assetManager.loadFont("Interface/Fonts/Default.fnt"),
                 settings.getWidth(),
@@ -83,6 +88,8 @@ public final class GameApplication extends SimpleApplication {
 
         cooldownHUD = new CooldownHUD(guiNode, assetManager,
                 settings.getWidth(), settings.getHeight());
+
+        playerHUD = new PlayerHUD(guiNode, assetManager, settings.getHeight());
     }
 
     @Override
@@ -94,7 +101,7 @@ public final class GameApplication extends SimpleApplication {
 
         if (paused) return;
 
-        Main.PLAYER.update();
+        Main.PLAYER.update(tpf);
         Main.CAMERA.update(Main.PLAYER);
         Main.ENEMY_MANAGER.update(tpf);
 
@@ -105,6 +112,8 @@ public final class GameApplication extends SimpleApplication {
 
         hitFlash.update(tpf);
         cooldownHUD.update();
+        playerHUD.update();
+        enemyHealthBars.update(Main.ENEMY_MANAGER);
     }
 
     private void handlePauseToggle() {

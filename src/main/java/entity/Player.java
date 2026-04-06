@@ -22,6 +22,7 @@ public final class Player {
     private final int width, height;
     private final InputController controller;
     private final PlayerActions   actions;
+    private final PlayerStats     stats;
 
     private float inputDirX = 0f;
     private float inputDirY = 0f;
@@ -35,28 +36,45 @@ public final class Player {
         this.y          = startY * tileSize;
         this.controller = controller;
         this.actions    = new PlayerActions(controller);
+        this.stats      = new PlayerStats();
     }
 
-    public void update() {
+    public void update(final float tpf) {
         computeInputDir();
 
-        final float[] impulse = actions.update(0.016f, inputDirX, inputDirY, vx, vy);
+        final boolean sprinting = controller.isButtonPressed("LT") && stats.hasStamina()
+                && (inputDirX != 0f || inputDirY != 0f);
+
+        stats.update(tpf, sprinting);
+
+        final float[] impulse = actions.update(tpf, inputDirX, inputDirY, vx, vy);
 
         if (actions.isDodging()) {
             vx = impulse[0];
             vy = impulse[1];
-        } else if (!actions.isDodgeFreeze()) {
-            handleInput();
+        } else if (!actions.isDodgeFreeze() && !actions.isMeleeActive()) {
+            handleInput(sprinting);
         }
 
         applyPhysics();
         updateBob();
     }
 
-    /** Applies an external velocity nudge — used by bounce logic. Physics resolves wall safety. */
+    /** External velocity nudge from bounce. Physics resolves wall safety next frame. */
     public void nudge(final float nx, final float ny) {
         vx += nx;
         vy += ny;
+    }
+
+    /** Direct velocity set — used by PlayerMelee lunge/return. */
+    public void setVelocityDirect(final float nvx, final float nvy) {
+        vx = nvx;
+        vy = nvy;
+    }
+
+    public void stopVelocity() {
+        vx = 0f;
+        vy = 0f;
     }
 
     private void computeInputDir() {
@@ -87,14 +105,17 @@ public final class Player {
         }
     }
 
-    private void handleInput() {
+    private void handleInput(final boolean sprinting) {
+        final float speedMult = sprinting ? Balance.PLAYER_SPRINT_SPEED_MULT : 1f;
+        final float maxSpeed  = Balance.PLAYER_MAX_SPEED * speedMult;
+
         vx += inputDirX * Balance.PLAYER_ACCELERATION;
         vy += inputDirY * Balance.PLAYER_ACCELERATION;
 
-        if (vx >  Balance.PLAYER_MAX_SPEED) vx =  Balance.PLAYER_MAX_SPEED;
-        if (vx < -Balance.PLAYER_MAX_SPEED) vx = -Balance.PLAYER_MAX_SPEED;
-        if (vy >  Balance.PLAYER_MAX_SPEED) vy =  Balance.PLAYER_MAX_SPEED;
-        if (vy < -Balance.PLAYER_MAX_SPEED) vy = -Balance.PLAYER_MAX_SPEED;
+        if (vx >  maxSpeed) vx =  maxSpeed;
+        if (vx < -maxSpeed) vx = -maxSpeed;
+        if (vy >  maxSpeed) vy =  maxSpeed;
+        if (vy < -maxSpeed) vy = -maxSpeed;
     }
 
     private void applyPhysics() {
@@ -138,7 +159,7 @@ public final class Player {
     }
 
     private void updateBob() {
-        if (actions.isDodging()) {
+        if (actions.isDodging() || actions.isMeleeActive()) {
             bobOffset = 0f;
             return;
         }
@@ -160,14 +181,15 @@ public final class Player {
     }
 
     public boolean tryParry(final float attackerX, final float attackerY) {
-        return actions.tryParry(attackerX, attackerY, centerX(), centerY());
+        return actions.tryParry(attackerX, attackerY);
     }
 
-    public boolean isInvincible()   { return actions.isInvincible(); }
-    public float   centerX()        { return x + width  / 2f; }
-    public float   centerY()        { return y + height / 2f; }
-    public float   getX()           { return x; }
-    public float   getY()           { return y; }
-    public float   getBobOffset()   { return bobOffset; }
-    public PlayerActions getActions() { return actions; }
+    public boolean isInvincible()     { return actions.isInvincible();   }
+    public float   centerX()          { return x + width  / 2f;          }
+    public float   centerY()          { return y + height / 2f;          }
+    public float   getX()             { return x;                        }
+    public float   getY()             { return y;                        }
+    public float   getBobOffset()     { return bobOffset;                }
+    public PlayerActions getActions() { return actions;                  }
+    public PlayerStats   getStats()   { return stats;                    }
 }

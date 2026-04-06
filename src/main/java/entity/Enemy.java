@@ -1,3 +1,4 @@
+// ===== entity/Enemy.java =====
 package entity;
 
 import balance.Balance;
@@ -14,6 +15,7 @@ public final class Enemy {
     private final EnemyWander      wander;
     private final EnemyChase       chase;
     private final EnemyAttack      attack;
+    private final EnemyHealth      health;
     private final String           id;
 
     public Enemy(final float startX,      final float startY,
@@ -24,6 +26,7 @@ public final class Enemy {
         this.attackTypes = attackTypes;
         this.body        = new EnemyBody(startX, startY, tileSize);
         this.detector    = new EnemyDetector(body);
+        this.health      = new EnemyHealth();
 
         final EnemySteer  steer  = new EnemySteer(body);
         final EnemyMelee  melee  = new EnemyMelee(body, id);
@@ -40,6 +43,8 @@ public final class Enemy {
     }
 
     public void update(final float tpf) {
+        if (health.isDead()) return;
+
         switch (state) {
             case WANDER -> {
                 if (detector.canDetectPlayer()) enterChase();
@@ -98,11 +103,12 @@ public final class Enemy {
         System.out.println("[" + id + "] " + msg);
     }
 
-    public float      getX()              { return body.getX(); }
-    public float      getY()              { return body.getY(); }
-    public float      getShakeOffset()    { return attack.getShakeOffset(); }
-    public float      getBobOffset()      { return body.getBobOffset(); }
-    public EnemyState getState()          { return state; }
-    public AttackType getCurrentAttack()  { return attack.getCurrentAttackType(); }
-    public List<AttackType> getAttackTypes() { return attackTypes; }
+    public float      getX()              { return body.getX();                  }
+    public float      getY()              { return body.getY();                  }
+    public float      getShakeOffset()    { return attack.getShakeOffset();      }
+    public float      getBobOffset()      { return body.getBobOffset();          }
+    public EnemyState getState()          { return state;                        }
+    public AttackType getCurrentAttack()  { return attack.getCurrentAttackType();}
+    public List<AttackType> getAttackTypes() { return attackTypes;               }
+    public EnemyHealth      getHealth()   { return health;                       }
 }

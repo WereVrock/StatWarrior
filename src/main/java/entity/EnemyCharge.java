@@ -27,10 +27,6 @@ public final class EnemyCharge {
         log("charge launched");
     }
 
-    /**
-     * Returns true if contact occurred (hit or parried).
-     * On contact, triggers bounce on both bodies.
-     */
     public boolean checkHit() {
         final float dx     = (Main.PLAYER.getX() + body.getTileSize() / 2f) - body.centerX();
         final float dy     = (Main.PLAYER.getY() + body.getTileSize() / 2f) - body.centerY();

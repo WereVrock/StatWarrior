@@ -1,6 +1,7 @@
 // ===== entity/PlayerManager.java =====
 package entity;
 
+import main.Main;
 import render3d.HitFlash;
 
 public final class PlayerManager {
@@ -11,8 +12,10 @@ public final class PlayerManager {
         this.hitFlash = hitFlash;
     }
 
-    /** Called when something contacts the player. Attacker world position is used for parry direction. */
+    /** Applies hit damage to the player and triggers visual feedback. */
     public void getsHit(final float attackerX, final float attackerY) {
+        Main.PLAYER.getStats().applyHit();
+        
         if (hitFlash != null) {
             hitFlash.trigger();
         }
