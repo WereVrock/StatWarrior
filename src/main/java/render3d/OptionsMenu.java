@@ -27,15 +27,11 @@ public final class OptionsMenu extends JFrame {
         panel.setLayout(new GridLayout(2, 1, 8, 8));
         panel.setBorder(BorderFactory.createEmptyBorder(20, 40, 20, 40));
 
-        final boolean current = Main.THIRD_PERSON_CAMERA.isFirstPersonAllowed();
-        final JCheckBox fpCheck = new JCheckBox("First Person Allowed", current);
-        fpCheck.addActionListener(e ->
-                Main.THIRD_PERSON_CAMERA.setFirstPersonAllowed(fpCheck.isSelected()));
-
+        
         final JButton closeBtn = new JButton("Close");
         closeBtn.addActionListener(e -> dispose());
 
-        panel.add(fpCheck);
+        
         panel.add(closeBtn);
         add(panel);
     }

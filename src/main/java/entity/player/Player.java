@@ -82,7 +82,7 @@ public final class Player {
         final boolean left  = controller.isLeftPressed();
         final boolean right = controller.isRightPressed();
 
-        final float yaw      = Main.THIRD_PERSON_CAMERA.getYaw();
+        final float yaw      = Main.FIRST_PERSON_CAMERA.getYaw();
         final float forwardX =  (float) Math.sin(yaw);
         final float forwardY =  (float) Math.cos(yaw);
         final float rightX   = -(float) Math.cos(yaw);

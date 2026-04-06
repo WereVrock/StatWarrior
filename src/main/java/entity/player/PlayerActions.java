@@ -96,7 +96,7 @@ public final class PlayerActions {
             dodgeDirX = inputDirX / len;
             dodgeDirY = inputDirY / len;
         } else {
-            final float yaw = Main.THIRD_PERSON_CAMERA.getYaw();
+            final float yaw = Main.FIRST_PERSON_CAMERA.getYaw();
             dodgeDirX = -(float) Math.sin(yaw);
             dodgeDirY = -(float) Math.cos(yaw);
         }
@@ -121,7 +121,7 @@ public final class PlayerActions {
         final float len = (float) Math.sqrt(dx * dx + dy * dy);
         if (len < 0.001f) return false;
 
-        final float yaw     = Main.THIRD_PERSON_CAMERA.getYaw();
+        final float yaw     = Main.FIRST_PERSON_CAMERA.getYaw();
         final float facingX = (float) Math.sin(yaw);
         final float facingY = (float) Math.cos(yaw);
 

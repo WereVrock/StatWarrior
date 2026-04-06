@@ -1,4 +1,3 @@
-// ===== render3d/GameApplication.java =====
 package render3d;
 
 import com.jme3.app.SimpleApplication;
@@ -12,10 +11,10 @@ public final class GameApplication extends SimpleApplication {
 
     public static GameApplication APP;
 
-    private HitFlash               hitFlash;
-    private PauseMenu              pauseMenu;
-    private CooldownHUD            cooldownHUD;
-    private PlayerHUD              playerHUD;
+    private HitFlash hitFlash;
+    private PauseMenu pauseMenu;
+    private CooldownHUD cooldownHUD;
+    private PlayerHUD playerHUD;
     private EnemyHealthBarRenderer3D enemyHealthBars;
 
     private boolean paused = false;
@@ -69,8 +68,9 @@ public final class GameApplication extends SimpleApplication {
         DungeonRenderer3D.renderDungeon();
         PlayerRenderer3D.init();
         EnemyRenderer3D.init(Main.ENEMY_MANAGER);
-        Main.THIRD_PERSON_CAMERA.init(cam);
-        Main.THIRD_PERSON_CAMERA.setFirstPersonAllowed(true);
+
+        // ✅ FIRST PERSON CAMERA ONLY
+        Main.FIRST_PERSON_CAMERA.init(cam);
 
         hitFlash = new HitFlash(settings);
         Main.PLAYER_MANAGER.init(hitFlash);
@@ -83,8 +83,8 @@ public final class GameApplication extends SimpleApplication {
                 settings.getWidth(),
                 settings.getHeight(),
                 assetManager,
-                () -> paused = false,   // Continue
-                this::restartGame       // Restart  ← was AppLifecycle.exit()
+                () -> paused = false,
+                this::restartGame
         );
         guiNode.attachChild(pauseMenu.getNode());
         pauseMenu.hide();
@@ -113,13 +113,14 @@ public final class GameApplication extends SimpleApplication {
         if (paused) return;
 
         Main.PLAYER.update(tpf);
-        Main.CAMERA.update(Main.PLAYER);
         Main.ENEMY_MANAGER.update(tpf);
 
         PlayerRenderer3D.update();
         EnemyRenderer3D.update(Main.ENEMY_MANAGER);
         ProjectileRenderer3D.update(Main.ENEMY_MANAGER.getProjectileManager());
-        Main.THIRD_PERSON_CAMERA.update(cam);
+
+        // ✅ ONLY CAMERA THAT EXISTS NOW
+        Main.FIRST_PERSON_CAMERA.update();
 
         hitFlash.update(tpf);
         cooldownHUD.update();
@@ -182,8 +183,10 @@ public final class GameApplication extends SimpleApplication {
     }
 
     private void resetTimers() {
-        upHeld = false; downHeld = false;
-        upTimer = 0f;   downTimer = 0f;
+        upHeld = false;
+        downHeld = false;
+        upTimer = 0f;
+        downTimer = 0f;
     }
 
     private boolean pressedButton(final String key) {

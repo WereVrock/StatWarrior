@@ -1,4 +1,3 @@
-// ===== render3d/PauseMenu.java =====
 package render3d;
 
 import com.jme3.asset.AssetManager;
@@ -10,7 +9,6 @@ import com.jme3.math.ColorRGBA;
 import com.jme3.scene.Geometry;
 import com.jme3.scene.Node;
 import com.jme3.scene.shape.Quad;
-import main.Main;
 
 public final class PauseMenu {
 
@@ -19,13 +17,11 @@ public final class PauseMenu {
     private static final ColorRGBA TEXT_NORMAL   = new ColorRGBA(0.72f, 0.65f, 0.55f, 1.00f);
     private static final ColorRGBA TEXT_SELECTED = new ColorRGBA(0.92f, 0.78f, 0.32f, 1.00f);
     private static final ColorRGBA SEPARATOR     = new ColorRGBA(0.45f, 0.30f, 0.15f, 0.60f);
-    private static final ColorRGBA TEXT_HINT     = new ColorRGBA(0.55f, 0.50f, 0.42f, 1.00f);
 
     private static final float PANEL_W   = 360f;
     private static final float PANEL_H   = 300f;
     private static final float ITEM_H    = 46f;
     private static final float FONT_MAIN = 1.4f;
-    private static final float FONT_HINT = 0.9f;
 
     private final Node root    = new Node("PauseMenu");
     private final Node optRoot = new Node("OptionsMenu");
@@ -37,13 +33,8 @@ public final class PauseMenu {
 
     private static final String[] MENU_ITEMS = { "Continue", "Restart", "Options", "Exit" };
 
-    // Options has one toggle item + Back
-    private static final int OPT_FP   = 0;
-    private static final int OPT_BACK = 1;
-
     private final BitmapText[] menuTexts;
     private final BitmapText[] optTexts;
-    private final BitmapText   fpHintText;   // "Press RS twice for first person"
 
     private final Runnable onContinue;
     private final Runnable onRestart;
@@ -53,28 +44,25 @@ public final class PauseMenu {
                      final AssetManager assets,
                      final Runnable onContinue,
                      final Runnable onRestart) {
+
         this.onContinue = onContinue;
         this.onRestart  = onRestart;
 
         final float panelX = screenW / 2f - PANEL_W / 2f;
         final float panelY = screenH / 2f - PANEL_H / 2f;
 
-        // Full-screen overlay
         final Geometry overlay = rect(assets, screenW, screenH, OVERLAY_COLOR);
         overlay.setLocalTranslation(0f, 0f, 2f);
         root.attachChild(overlay);
 
-        // Panel background
         final Geometry panel = rect(assets, PANEL_W, PANEL_H, PANEL_COLOR);
         panel.setLocalTranslation(panelX, panelY, 3f);
         root.attachChild(panel);
 
-        // Separator
         final Geometry sep = rect(assets, PANEL_W - 40f, 1f, SEPARATOR);
         sep.setLocalTranslation(panelX + 20f, panelY + PANEL_H - 58f, 4f);
         root.attachChild(sep);
 
-        // Title
         final BitmapText title = new BitmapText(font);
         title.setSize(font.getCharSet().getRenderedSize() * 1.6f);
         title.setColor(TEXT_SELECTED);
@@ -84,7 +72,6 @@ public final class PauseMenu {
                 panelY + PANEL_H - 16f, 5f);
         root.attachChild(title);
 
-        // Main menu texts
         menuTexts = new BitmapText[MENU_ITEMS.length];
         for (int i = 0; i < MENU_ITEMS.length; i++) {
             final BitmapText t = new BitmapText(font);
@@ -97,29 +84,17 @@ public final class PauseMenu {
             root.attachChild(t);
         }
 
-        // Options texts — 2 items: toggle + back
-        optTexts = new BitmapText[2];
-        for (int i = 0; i < 2; i++) {
-            final BitmapText t = new BitmapText(font);
-            t.setSize(font.getCharSet().getRenderedSize() * FONT_MAIN);
-            t.setLocalTranslation(
-                    panelX + 40f,
-                    panelY + PANEL_H - 74f - i * ITEM_H,
-                    5f);
-            optTexts[i] = t;
-            optRoot.attachChild(t);
-        }
+        optTexts = new BitmapText[1];
 
-        // Hint text shown below the FP toggle when it's ON
-        fpHintText = new BitmapText(font);
-        fpHintText.setSize(font.getCharSet().getRenderedSize() * FONT_HINT);
-        fpHintText.setColor(TEXT_HINT);
-        fpHintText.setText("Press Right Stick twice for first person");
-        fpHintText.setLocalTranslation(
+        final BitmapText backText = new BitmapText(font);
+        backText.setSize(font.getCharSet().getRenderedSize() * FONT_MAIN);
+        backText.setLocalTranslation(
                 panelX + 40f,
-                panelY + PANEL_H - 74f - ITEM_H - 22f,
+                panelY + PANEL_H - 74f,
                 5f);
-        optRoot.attachChild(fpHintText);
+
+        optTexts[0] = backText;
+        optRoot.attachChild(backText);
 
         root.attachChild(optRoot);
 
@@ -147,11 +122,14 @@ public final class PauseMenu {
         root.setCullHint(Node.CullHint.Always);
     }
 
-    public boolean isVisible() { return visible; }
+    // ✅ RESTORED (required by your project)
+    public boolean isVisible() {
+        return visible;
+    }
 
     public void moveUp() {
         if (inOptions) {
-            optionsIndex = (optionsIndex - 1 + 2) % 2;
+            optionsIndex = 0;
             refreshOptions();
         } else {
             menuIndex = (menuIndex - 1 + MENU_ITEMS.length) % MENU_ITEMS.length;
@@ -161,7 +139,7 @@ public final class PauseMenu {
 
     public void moveDown() {
         if (inOptions) {
-            optionsIndex = (optionsIndex + 1) % 2;
+            optionsIndex = 0;
             refreshOptions();
         } else {
             menuIndex = (menuIndex + 1) % MENU_ITEMS.length;
@@ -171,15 +149,7 @@ public final class PauseMenu {
 
     public void select() {
         if (inOptions) {
-            switch (optionsIndex) {
-                case OPT_FP -> {
-                    // Toggle first person allowed
-                    final boolean next = !Main.THIRD_PERSON_CAMERA.isFirstPersonAllowed();
-                    Main.THIRD_PERSON_CAMERA.setFirstPersonAllowed(next);
-                    refreshOptions();
-                }
-                case OPT_BACK -> back();
-            }
+            back();
         } else {
             switch (menuIndex) {
                 case 0 -> { hide(); onContinue.run(); }
@@ -219,22 +189,9 @@ public final class PauseMenu {
     }
 
     private void refreshOptions() {
-        final boolean fp = Main.THIRD_PERSON_CAMERA.isFirstPersonAllowed();
-
-        final String[] labels = {
-            "First Person: " + (fp ? "ON" : "OFF"),
-            "Back"
-        };
-
-        for (int i = 0; i < 2; i++) {
-            final boolean sel = (i == optionsIndex);
-            optTexts[i].setColor(sel ? TEXT_SELECTED : TEXT_NORMAL);
-            optTexts[i].setText((sel ? "> " : "  ") + labels[i]);
-        }
-
-        // Show hint only when FP is enabled
-        fpHintText.setCullHint(
-                fp ? Node.CullHint.Inherit : Node.CullHint.Always);
+        final boolean sel = (optionsIndex == 0);
+        optTexts[0].setColor(sel ? TEXT_SELECTED : TEXT_NORMAL);
+        optTexts[0].setText((sel ? "> " : "  ") + "Back");
     }
 
     private static void hideTexts(final BitmapText[] texts) {
@@ -246,8 +203,8 @@ public final class PauseMenu {
     }
 
     private static Geometry rect(final AssetManager assets,
-                                  final float w, final float h,
-                                  final ColorRGBA color) {
+                                 final float w, final float h,
+                                 final ColorRGBA color) {
         final Geometry geo = new Geometry("Rect", new Quad(w, h));
         final Material mat = new Material(
                 assets, "Common/MatDefs/Misc/Unshaded.j3md");

@@ -49,7 +49,7 @@ public final class PlayerMelee {
         originX = Main.PLAYER.centerX();
         originY = Main.PLAYER.centerY();
 
-        final float yaw      = Main.THIRD_PERSON_CAMERA.getYaw();
+        final float yaw      = Main.FIRST_PERSON_CAMERA.getYaw();
         float       dirX     = (float) Math.sin(yaw);
         float       dirY     = (float) Math.cos(yaw);
 

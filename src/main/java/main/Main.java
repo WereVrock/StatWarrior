@@ -9,14 +9,15 @@ import entity.enemy.EnemyManager;
 import entity.player.Player;
 import entity.player.PlayerManager;
 import render3d.Camera;
+import render3d.FirstPersonCamera;
 import render3d.GameApplication;
-import render3d.ThirdPersonCamera;
+
 
 public final class Main {
 
     public static final Dungeon           DUNGEON             = new Dungeon();
     public static final InputController   CONTROLLER          = new HybridController();
-    public static final ThirdPersonCamera THIRD_PERSON_CAMERA = new ThirdPersonCamera();
+    public static final FirstPersonCamera FIRST_PERSON_CAMERA = new FirstPersonCamera();
     public static final PlayerManager     PLAYER_MANAGER      = new PlayerManager();
 
     public static EnemyManager ENEMY_MANAGER;
