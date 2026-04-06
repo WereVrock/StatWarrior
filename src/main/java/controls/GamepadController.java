@@ -62,38 +62,44 @@ public final class GamepadController implements InputController {
     // Buttons
     // =========================
 
-    @Override
-    public boolean isButtonPressed(String button) {
-        if (state == null) return false;
+    private static final float TRIGGER_THRESHOLD = 0.5f;
 
-        return switch (button) {
-            // Face buttons
-            case "A" -> state.a;
-            case "B" -> state.b;
-            case "X" -> state.x;
-            case "Y" -> state.y;
+@Override
+public boolean isButtonPressed(String button) {
+    if (state == null || !state.isConnected) return false;
 
-            // Bumpers
-            case "LB" -> state.lb;
-            case "RB" -> state.rb;
+    return switch (button) {
+        // Face buttons
+        case "A" -> state.a;
+        case "B" -> state.b;
+        case "X" -> state.x;
+        case "Y" -> state.y;
 
-            // Stick clicks
-            case "LS" -> state.leftStickClick;
-            case "RS" -> state.rightStickClick;
+        // Bumpers
+        case "LB" -> state.lb;
+        case "RB" -> state.rb;
 
-            // Start / Back
-            case "START" -> state.start;
-            case "BACK" -> state.back;
+        // Triggers (analog → threshold)
+        case "LT" -> state.leftTrigger > TRIGGER_THRESHOLD;
+        case "RT" -> state.rightTrigger > TRIGGER_THRESHOLD;
 
-            // D-pad
-            case "DPAD_UP"    -> state.dpadUp;
-            case "DPAD_DOWN"  -> state.dpadDown;
-            case "DPAD_LEFT"  -> state.dpadLeft;
-            case "DPAD_RIGHT" -> state.dpadRight;
+        // Stick clicks
+        case "LS" -> state.leftStickClick;
+        case "RS" -> state.rightStickClick;
 
-            default -> false;
-        };
-    }
+        // Start / Back
+        case "START" -> state.start;
+        case "BACK" -> state.back;
+
+        // D-pad
+        case "DPAD_UP"    -> state.dpadUp;
+        case "DPAD_DOWN"  -> state.dpadDown;
+        case "DPAD_LEFT"  -> state.dpadLeft;
+        case "DPAD_RIGHT" -> state.dpadRight;
+
+        default -> false;
+    };
+}
 
     // =========================
     // Axes
