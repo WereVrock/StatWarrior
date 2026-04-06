@@ -1,12 +1,13 @@
+// ===== main/Main.java =====
 package main;
 
 import balance.BalanceStorage;
 import controls.HybridController;
 import controls.InputController;
 import dungeon.Dungeon;
-import entity.EnemyManager;
-import entity.Player;
-import entity.PlayerManager;
+import entity.enemy.EnemyManager;
+import entity.player.Player;
+import entity.player.PlayerManager;
 import render3d.Camera;
 import render3d.GameApplication;
 import render3d.ThirdPersonCamera;
@@ -16,28 +17,38 @@ public final class Main {
     public static final Dungeon           DUNGEON             = new Dungeon();
     public static final InputController   CONTROLLER          = new HybridController();
     public static final ThirdPersonCamera THIRD_PERSON_CAMERA = new ThirdPersonCamera();
-    public static final EnemyManager      ENEMY_MANAGER       = new EnemyManager();
     public static final PlayerManager     PLAYER_MANAGER      = new PlayerManager();
 
-    public static final Player PLAYER;
-    public static final Camera CAMERA;
+    public static EnemyManager ENEMY_MANAGER;
+    public static Player       PLAYER;
+    public static Camera       CAMERA;
+
     public static balance.BalanceFrame BALANCE_FRAME;
 
+    private static final int TILE_SIZE     = 32;
+    private static final int SCREEN_WIDTH  = 800;
+    private static final int SCREEN_HEIGHT = 600;
+
     static {
-        final int tileSize     = 32;
-        final int screenWidth  = 800;
-        final int screenHeight = 600;
+        initMutableState();
+    }
 
-        final var grid = DUNGEON.getGrid();
-
-        PLAYER = new Player(
-                grid[0].length / 2,
-                grid.length / 2,
-                tileSize,
+    private static void initMutableState() {
+        
+        // getGrid() returns DungeonCell[][], keep consistent with existing API
+        ENEMY_MANAGER = new EnemyManager();
+        PLAYER        = new Player(
+                DUNGEON.getGrid()[0].length / 2,
+                DUNGEON.getGrid().length    / 2,
+                TILE_SIZE,
                 CONTROLLER
         );
+        CAMERA = new Camera(SCREEN_WIDTH, SCREEN_HEIGHT, TILE_SIZE);
+    }
 
-        CAMERA = new Camera(screenWidth, screenHeight, tileSize);
+    /** Called by GameApplication.restartGame() to reset all mutable game state. */
+    public static void restart() {
+        initMutableState();
     }
 
     private Main() {}

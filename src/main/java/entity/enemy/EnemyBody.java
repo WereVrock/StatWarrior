@@ -1,8 +1,9 @@
 // ===== entity/EnemyBody.java =====
-package entity;
+package entity.enemy;
 
 import balance.Balance;
 import dungeon.DungeonCell;
+import entity.BobConstants;
 import main.Main;
 
 public final class EnemyBody {

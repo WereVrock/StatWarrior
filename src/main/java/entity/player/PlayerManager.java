@@ -1,5 +1,5 @@
 // ===== entity/PlayerManager.java =====
-package entity;
+package entity.player;
 
 import main.Main;
 import render3d.HitFlash;

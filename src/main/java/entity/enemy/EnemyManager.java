@@ -1,6 +1,8 @@
-package entity;
+package entity.enemy;
 
+import entity.enemy.Enemy;
 import dungeon.DungeonCell;
+import entity.ProjectileManager;
 import main.Main;
 
 import java.util.ArrayList;

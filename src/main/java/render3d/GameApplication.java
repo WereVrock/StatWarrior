@@ -63,6 +63,9 @@ public final class GameApplication extends SimpleApplication {
                 org.lwjgl.glfw.GLFW.GLFW_CURSOR_NORMAL
         );
 
+        getRootNode().detachAllChildren();
+        getGuiNode().detachAllChildren();
+
         DungeonRenderer3D.renderDungeon();
         PlayerRenderer3D.init();
         EnemyRenderer3D.init(Main.ENEMY_MANAGER);
@@ -80,8 +83,8 @@ public final class GameApplication extends SimpleApplication {
                 settings.getWidth(),
                 settings.getHeight(),
                 assetManager,
-                () -> paused = false,
-                () -> AppLifecycle.exit()
+                () -> paused = false,   // Continue
+                this::restartGame       // Restart  ← was AppLifecycle.exit()
         );
         guiNode.attachChild(pauseMenu.getNode());
         pauseMenu.hide();
@@ -90,6 +93,14 @@ public final class GameApplication extends SimpleApplication {
                 settings.getWidth(), settings.getHeight());
 
         playerHUD = new PlayerHUD(guiNode, assetManager, settings.getHeight());
+    }
+
+    private void restartGame() {
+        paused = false;
+        lastButtons.clear();
+        resetTimers();
+        Main.restart();
+        simpleInitApp();
     }
 
     @Override

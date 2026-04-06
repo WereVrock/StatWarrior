@@ -1,5 +1,5 @@
 // ===== entity/PlayerConstants.java =====
-package entity;
+package entity.player;
 
 public final class PlayerConstants {
 

@@ -1,6 +1,7 @@
-package entity;
+package entity.enemy;
 
 import balance.Balance;
+import entity.AttackType;
 
 import java.util.List;
 

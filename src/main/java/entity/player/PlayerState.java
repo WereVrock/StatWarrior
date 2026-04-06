@@ -1,5 +1,5 @@
 // ===== entity/PlayerState.java =====
-package entity;
+package entity.player;
 
 public enum PlayerState {
     NORMAL,

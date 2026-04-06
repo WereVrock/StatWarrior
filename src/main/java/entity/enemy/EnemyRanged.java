@@ -1,6 +1,8 @@
-package entity;
+package entity.enemy;
 
+import entity.enemy.EnemyBody;
 import balance.Balance;
+import entity.ProjectileManager;
 import main.Main;
 
 public final class EnemyRanged {

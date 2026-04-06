@@ -1,5 +1,5 @@
 // ===== entity/PlayerMeleeState.java =====
-package entity;
+package entity.player;
 
 public enum PlayerMeleeState {
     IDLE,

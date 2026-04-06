@@ -1,5 +1,6 @@
-package entity;
+package entity.enemy;
 
+import entity.enemy.EnemyBody;
 import balance.Balance;
 import dungeon.DungeonCell;
 import main.Main;

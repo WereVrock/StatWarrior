@@ -1,5 +1,8 @@
-package entity;
+package entity.enemy;
 
+import entity.AttackType;
+import entity.ProjectileManager;
+import entity.enemy.Enemy;
 import java.util.List;
 
 public final class EnemySpawner {

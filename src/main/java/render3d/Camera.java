@@ -1,6 +1,6 @@
 package render3d;
 
-import entity.Player;
+import entity.player.Player;
 
 public final class Camera {
 

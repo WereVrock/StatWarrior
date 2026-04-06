@@ -1,9 +1,10 @@
 // ===== entity/Player.java =====
-package entity;
+package entity.player;
 
 import balance.Balance;
 import controls.InputController;
 import dungeon.DungeonCell;
+import entity.BobConstants;
 import main.Main;
 
 import java.awt.Color;
@@ -60,13 +61,11 @@ public final class Player {
         updateBob();
     }
 
-    /** External velocity nudge from bounce. Physics resolves wall safety next frame. */
     public void nudge(final float nx, final float ny) {
         vx += nx;
         vy += ny;
     }
 
-    /** Direct velocity set — used by PlayerMelee lunge/return. */
     public void setVelocityDirect(final float nvx, final float nvy) {
         vx = nvx;
         vy = nvy;
@@ -107,10 +106,11 @@ public final class Player {
 
     private void handleInput(final boolean sprinting) {
         final float speedMult = sprinting ? Balance.PLAYER_SPRINT_SPEED_MULT : 1f;
-        final float maxSpeed  = Balance.PLAYER_MAX_SPEED * speedMult;
+        final float maxSpeed  = Balance.PLAYER_MAX_SPEED        * speedMult;
+        final float accel     = Balance.PLAYER_ACCELERATION     * speedMult; // ← sprint accel scales too
 
-        vx += inputDirX * Balance.PLAYER_ACCELERATION;
-        vy += inputDirY * Balance.PLAYER_ACCELERATION;
+        vx += inputDirX * accel;
+        vy += inputDirY * accel;
 
         if (vx >  maxSpeed) vx =  maxSpeed;
         if (vx < -maxSpeed) vx = -maxSpeed;

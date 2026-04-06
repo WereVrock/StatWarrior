@@ -1,4 +1,4 @@
-package entity;
+package entity.enemy;
 
 public enum EnemyState {
     WANDER,

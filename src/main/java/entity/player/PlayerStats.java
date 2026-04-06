@@ -1,5 +1,5 @@
 // ===== entity/PlayerStats.java =====
-package entity;
+package entity.player;
 
 import balance.Balance;
 

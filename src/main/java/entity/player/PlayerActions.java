@@ -1,12 +1,12 @@
 // ===== entity/PlayerActions.java =====
-package entity;
+package entity.player;
 
 import controls.InputController;
 import main.Main;
 
 public final class PlayerActions {
 
-    private PlayerState state     = PlayerState.NORMAL;
+    private PlayerState state      = PlayerState.NORMAL;
     private float       stateTimer = 0f;
 
     private float dodgeCooldown  = 0f;
@@ -48,7 +48,6 @@ public final class PlayerActions {
 
         final float[] impulse = { 0f, 0f };
 
-        // Melee runs independently of dodge/parry state
         if (!isActive()) {
             playerMelee.update(tpf, bJustPressed);
         }
@@ -87,11 +86,6 @@ public final class PlayerActions {
             }
         }
 
-        // If melee is lunging/returning, override impulse
-        if (playerMelee.isLunging() || playerMelee.isReturning()) {
-            // velocity is set directly on Player; impulse here stays 0
-        }
-
         return impulse;
     }
 
@@ -117,10 +111,6 @@ public final class PlayerActions {
         parryConsumed = false;
     }
 
-    /**
-     * Parry check. Attacker must be in the forward 180-degree cone.
-     * On success: state returns to NORMAL, cooldown resets to 0.
-     */
     public boolean tryParry(final float attackerX, final float attackerY) {
         if (state != PlayerState.PARRYING || parryConsumed) return false;
 
@@ -145,7 +135,6 @@ public final class PlayerActions {
         return true;
     }
 
-    /** True when dodge or parry is active — melee still allowed separately. */
     private boolean isActive() {
         return state != PlayerState.NORMAL;
     }
@@ -164,6 +153,16 @@ public final class PlayerActions {
         return PlayerConstants.PARRY_COOLDOWN > 0f
                 ? 1f - (parryCooldown / PlayerConstants.PARRY_COOLDOWN) : 1f;
     }
+
+    /**
+     * How much parry duration remains: 1.0 = just started, 0.0 = expired.
+     * Only meaningful while isParrying() is true.
+     */
+    public float getParryDurationFraction() {
+        return PlayerConstants.PARRY_DURATION > 0f
+                ? stateTimer / PlayerConstants.PARRY_DURATION : 0f;
+    }
+
     public float getMeleeCooldownFraction() {
         return playerMelee.getCooldownFraction();
     }

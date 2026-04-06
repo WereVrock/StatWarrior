@@ -1,7 +1,8 @@
 // ===== entity/EnemyCharge.java =====
-package entity;
+package entity.enemy;
 
 import balance.Balance;
+import entity.player.PlayerConstants;
 import main.Main;
 
 public final class EnemyCharge {

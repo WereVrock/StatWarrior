@@ -1,7 +1,9 @@
 // ===== entity/EnemyMelee.java =====
-package entity;
+package entity.enemy;
 
+import entity.enemy.EnemyBody;
 import balance.Balance;
+import entity.player.PlayerConstants;
 import main.Main;
 
 public final class EnemyMelee {

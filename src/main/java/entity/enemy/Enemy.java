@@ -1,7 +1,9 @@
 // ===== entity/Enemy.java =====
-package entity;
+package entity.enemy;
 
 import balance.Balance;
+import entity.AttackType;
+import entity.ProjectileManager;
 
 import java.util.List;
 
@@ -43,6 +45,9 @@ public final class Enemy {
     }
 
     public void update(final float tpf) {
+        // Always tick the health timer (drives death animation)
+        health.update(tpf);
+
         if (health.isDead()) return;
 
         switch (state) {
