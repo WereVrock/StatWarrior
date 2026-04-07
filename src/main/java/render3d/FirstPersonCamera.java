@@ -10,7 +10,7 @@ public final class FirstPersonCamera {
     private static final float ROTATE_SPEED = 2.0f;
     private static final float PITCH_MIN    = -80f;
     private static final float PITCH_MAX    = 80f;
-    private static final float EYE_HEIGHT   = 0.85f;
+    private static final float EYE_HEIGHT   = 1.85f;
     private static final float LOOK_DIST    = 5f;
 
     private float yaw;
