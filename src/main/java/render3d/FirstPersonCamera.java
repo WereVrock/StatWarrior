@@ -49,10 +49,10 @@ public final class FirstPersonCamera {
     }
 
     private void applyCamera() {
-        final float px = Main.PLAYER.getX() / 32f;
-        final float pz = Main.PLAYER.getY() / 32f;
+        final float playerX = (Main.PLAYER.getX() ) / 32f;
+final float playerZ = (Main.PLAYER.getY() ) / 32f;
 
-        final Vector3f eyePos = new Vector3f(px, EYE_HEIGHT, pz);
+        final Vector3f eyePos = new Vector3f(playerX, EYE_HEIGHT, playerZ);
 
         final float cosPitch = FastMath.cos(pitch);
 
