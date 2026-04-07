@@ -119,45 +119,74 @@ public final class Player {
     }
 
     private void applyPhysics() {
-        vx *= Balance.PLAYER_FRICTION;
-        vy *= Balance.PLAYER_FRICTION;
-
-        final float nextX = x + vx;
-        final float nextY = y + vy;
-
-        final DungeonCell[][] grid = Main.DUNGEON.getGrid();
-        final int gridWidth  = grid[0].length;
-        final int gridHeight = grid.length;
-
-        int tileLeft   = (int)(nextX / tileSize);
-        int tileRight  = (int)((nextX + width - 1) / tileSize);
+    vx *= Balance.PLAYER_FRICTION;
+    vy *= Balance.PLAYER_FRICTION;
+    final DungeonCell[][] grid = Main.DUNGEON.getGrid();
+    final int gridWidth  = grid[0].length;
+    final int gridHeight = grid.length;
+    // =========================
+    // ===== X AXIS ============
+    // =========================
+    float nextX = x + vx;
+    if (vx > 0) { // moving right
+        int tileRight  = (int)((nextX + 2*width) / tileSize);
         int tileTop    = (int)(y / tileSize);
         int tileBottom = (int)((y + height - 1) / tileSize);
-
-        if (tileLeft < 0 || tileRight >= gridWidth) {
+        if (tileRight >= gridWidth ||
+            !grid[tileTop][tileRight].isActive() ||
+            !grid[tileBottom][tileRight].isActive()) {
+            // snap: consistent with 2*width detection
+            x = tileRight * tileSize - 2*width;
             vx = 0;
-        } else if (grid[tileTop][tileLeft].isActive() && grid[tileTop][tileRight].isActive() &&
-                   grid[tileBottom][tileLeft].isActive() && grid[tileBottom][tileRight].isActive()) {
+        } else {
             x = nextX;
-        } else {
-            vx = 0;
         }
-
-        tileLeft        = (int)(x / tileSize);
-        tileRight       = (int)((x + width - 1) / tileSize);
-        tileTop         = (int)(nextY / tileSize);
-        int tileBottomY = (int)((nextY + height - 1) / tileSize);
-
-        if (tileTop < 0 || tileBottomY >= gridHeight) {
-            vy = 0;
-        } else if (grid[tileTop][tileLeft].isActive() && grid[tileTop][tileRight].isActive() &&
-                   grid[tileBottomY][tileLeft].isActive() && grid[tileBottomY][tileRight].isActive()) {
-            y = nextY;
+    } else if (vx < 0) { // moving left
+        int tileLeft   = (int)(nextX / tileSize);
+        int tileTop    = (int)(y / tileSize);
+        int tileBottom = (int)((y + height - 1) / tileSize);
+        if (tileLeft < 0 ||
+            !grid[tileTop][tileLeft].isActive() ||
+            !grid[tileBottom][tileLeft].isActive()) {
+            // snap to wall (no multiplier on left)
+            x = (tileLeft + 1) * tileSize;
+            vx = 0;
         } else {
-            vy = 0;
+            x = nextX;
         }
     }
-
+    // =========================
+    // ===== Y AXIS ============
+    // =========================
+    float nextY = y + vy;
+    if (vy > 0) { // moving down
+        int tileBottom = (int)((nextY + 2*height) / tileSize);
+        int tileLeft   = (int)(x / tileSize);
+        int tileRight  = (int)((x + width - 1) / tileSize);
+        if (tileBottom >= gridHeight ||
+            !grid[tileBottom][tileLeft].isActive() ||
+            !grid[tileBottom][tileRight].isActive()) {
+            // snap: consistent with 2*height detection
+            y = tileBottom * tileSize - 2*height;
+            vy = 0;
+        } else {
+            y = nextY;
+        }
+    } else if (vy < 0) { // moving up
+        int tileTop   = (int)(nextY / tileSize);
+        int tileLeft  = (int)(x / tileSize);
+        int tileRight = (int)((x + width - 1) / tileSize);
+        if (tileTop < 0 ||
+            !grid[tileTop][tileLeft].isActive() ||
+            !grid[tileTop][tileRight].isActive()) {
+            // snap to wall (no multiplier on up)
+            y = (tileTop + 1) * tileSize;
+            vy = 0;
+        } else {
+            y = nextY;
+        }
+    }
+}
     private void updateBob() {
         if (actions.isDodging() || actions.isMeleeActive()) {
             bobOffset = 0f;

@@ -8,18 +8,8 @@ import java.awt.*;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * A standalone Swing JFrame that exposes all camera frustum and FOV values
- * as interactive sliders. Each slider has editable min/max fields and applies
- * changes to the JME camera instantly.
- *
- * Start from GameApplication via:  CameraDebugPanel.open(() -> cam);
- */
 public final class CameraDebugPanel extends JFrame {
 
-    // -------------------------------------------------------------------------
-    // Defaults / initial slider ranges
-    // -------------------------------------------------------------------------
     private static final float DEFAULT_NEAR_MIN   = 0.01f;
     private static final float DEFAULT_NEAR_MAX   = 5f;
     private static final float DEFAULT_FAR_MIN    = 10f;
@@ -37,34 +27,27 @@ public final class CameraDebugPanel extends JFrame {
 
     private static final int  SLIDER_RESOLUTION = 10_000;
     private static final int  PANEL_WIDTH       = 520;
-    private static final int  PANEL_HEIGHT      = 620;
+    private static final int  PANEL_HEIGHT      = 680;
     private static final Font MONO_FONT         = new Font("Monospaced", Font.PLAIN, 12);
 
-    // -------------------------------------------------------------------------
-    // Camera supplier (called on every access so we always use the live instance)
-    // -------------------------------------------------------------------------
     public interface CameraSupplier {
         Camera get();
     }
 
-    private final CameraSupplier    cameraSupplier;
+    private final CameraSupplier cameraSupplier;
     private final List<CameraParam> params = new ArrayList<>();
 
-    // -------------------------------------------------------------------------
-    // Factory
-    // -------------------------------------------------------------------------
+    // Revert support
+    private final CameraState initialState;
+
     public static void open(final CameraSupplier supplier) {
         SwingUtilities.invokeLater(() -> new CameraDebugPanel(supplier).setVisible(true));
     }
 
-    // -------------------------------------------------------------------------
-    // Construction
-    // -------------------------------------------------------------------------
     private CameraDebugPanel(final CameraSupplier supplier) {
         super("Camera Debug");
         this.cameraSupplier = supplier;
 
-        // Prevent this window from stealing focus from or minimizing the game
         setFocusableWindowState(false);
         setAutoRequestFocus(false);
 
@@ -72,6 +55,9 @@ public final class CameraDebugPanel extends JFrame {
         setSize(PANEL_WIDTH, PANEL_HEIGHT);
         setResizable(true);
         setAlwaysOnTop(true);
+
+        final Camera cam = cameraSupplier.get();
+        initialState = (cam != null) ? CameraState.capture(cam) : null;
 
         final JPanel root = new JPanel();
         root.setLayout(new BoxLayout(root, BoxLayout.Y_AXIS));
@@ -85,6 +71,8 @@ public final class CameraDebugPanel extends JFrame {
 
         root.add(Box.createVerticalStrut(8));
         root.add(buildShowValuesButton());
+        root.add(Box.createVerticalStrut(6));
+        root.add(buildRevertButton());
 
         final JScrollPane scroll = new JScrollPane(root);
         scroll.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
@@ -139,6 +127,30 @@ public final class CameraDebugPanel extends JFrame {
         return btn;
     }
 
+    private JComponent buildRevertButton() {
+        final JButton btn = new JButton("Revert to Initial");
+        btn.setAlignmentX(Component.CENTER_ALIGNMENT);
+        btn.setFocusable(false);
+
+        btn.addActionListener(e -> {
+            Camera cam = cameraSupplier.get();
+            if (cam == null || initialState == null) return;
+
+            initialState.apply(cam);
+            refreshUIFromCamera();
+        });
+
+        return btn;
+    }
+
+    private void refreshUIFromCamera() {
+        for (CameraParam p : params) {
+            float val = p.readCurrentValue();
+            p.slider.setValue(p.valueToSlider(val));
+            p.currentLabel.setText(CameraParam.formatValue(val));
+        }
+    }
+
     private void showValuesDialog() {
         final Camera cam = cameraSupplier.get();
         if (cam == null) {
@@ -184,13 +196,40 @@ public final class CameraDebugPanel extends JFrame {
         );
     }
 
-    // =========================================================================
-    // CameraParam — one row: label | min field | slider | max field | current value
-    // =========================================================================
+    // ========================= STATE =========================
+    private static final class CameraState {
+        float near, far, left, right, top, bottom, fov;
+
+        static CameraState capture(Camera cam) {
+            CameraState s = new CameraState();
+            s.near   = cam.getFrustumNear();
+            s.far    = cam.getFrustumFar();
+            s.left   = cam.getFrustumLeft();
+            s.right  = cam.getFrustumRight();
+            s.top    = cam.getFrustumTop();
+            s.bottom = cam.getFrustumBottom();
+            s.fov    = cam.getFov();
+            return s;
+        }
+
+        void apply(Camera cam) {
+            cam.setFrustumNear(near);
+            cam.setFrustumFar(far);
+            cam.setFrustumLeft(left);
+            cam.setFrustumRight(right);
+            cam.setFrustumTop(top);
+            cam.setFrustumBottom(bottom);
+
+            float aspect = (float) cam.getWidth() / cam.getHeight();
+            cam.setFrustumPerspective(fov, aspect, near, far);
+        }
+    }
+
+    // ========================= PARAM =========================
     private final class CameraParam {
 
         interface Getter { float get(Camera cam); }
-        interface Setter { void  set(Camera cam, float value); }
+        interface Setter { void set(Camera cam, float value); }
 
         private final String label;
         private final Getter getter;
@@ -199,23 +238,21 @@ public final class CameraDebugPanel extends JFrame {
         private float rangeMin;
         private float rangeMax;
 
-        private JSlider    slider;
-        private JLabel     currentLabel;
+        private JSlider slider;
+        private JLabel currentLabel;
         private JTextField minField;
         private JTextField maxField;
 
-        CameraParam(final String label,
-                    final float defaultMin, final float defaultMax,
-                    final Getter getter,    final Setter setter) {
-            this.label    = label;
-            this.rangeMin = defaultMin;
-            this.rangeMax = defaultMax;
-            this.getter   = getter;
-            this.setter   = setter;
+        CameraParam(String label, float min, float max, Getter g, Setter s) {
+            this.label = label;
+            this.rangeMin = min;
+            this.rangeMax = max;
+            this.getter = g;
+            this.setter = s;
         }
 
         JPanel buildRow() {
-            final JPanel row = new JPanel(new BorderLayout(4, 2));
+            JPanel row = new JPanel(new BorderLayout(4, 2));
             row.setBorder(new TitledBorder(label));
 
             slider = new JSlider(0, SLIDER_RESOLUTION, valueToSlider(readCurrentValue()));
@@ -236,19 +273,19 @@ public final class CameraDebugPanel extends JFrame {
             currentLabel.setPreferredSize(new Dimension(90, 20));
             currentLabel.setHorizontalAlignment(SwingConstants.RIGHT);
 
-            final JPanel sliderRow = new JPanel(new BorderLayout(4, 0));
+            JPanel sliderRow = new JPanel(new BorderLayout(4, 0));
             sliderRow.add(minField, BorderLayout.WEST);
-            sliderRow.add(slider,   BorderLayout.CENTER);
+            sliderRow.add(slider, BorderLayout.CENTER);
             sliderRow.add(maxField, BorderLayout.EAST);
 
-            row.add(sliderRow,    BorderLayout.CENTER);
+            row.add(sliderRow, BorderLayout.CENTER);
             row.add(currentLabel, BorderLayout.EAST);
 
             return row;
         }
 
         private void onSliderMoved() {
-            final float value = sliderToValue(slider.getValue());
+            float value = sliderToValue(slider.getValue());
             currentLabel.setText(formatValue(value));
             applySafe(value);
         }
@@ -259,31 +296,31 @@ public final class CameraDebugPanel extends JFrame {
                 rangeMax = Float.parseFloat(maxField.getText().trim());
                 if (rangeMin >= rangeMax) return;
                 slider.setValue(valueToSlider(readCurrentValue()));
-            } catch (final NumberFormatException ignored) {}
+            } catch (NumberFormatException ignored) {}
         }
 
-        private void applySafe(final float value) {
-            final Camera cam = cameraSupplier.get();
+        private void applySafe(float value) {
+            Camera cam = cameraSupplier.get();
             if (cam == null) return;
             setter.set(cam, value);
         }
 
         private float readCurrentValue() {
-            final Camera cam = cameraSupplier.get();
+            Camera cam = cameraSupplier.get();
             if (cam == null) return rangeMin;
             return getter.get(cam);
         }
 
-        private int valueToSlider(final float value) {
-            final float clamped = Math.max(rangeMin, Math.min(rangeMax, value));
+        private int valueToSlider(float value) {
+            float clamped = Math.max(rangeMin, Math.min(rangeMax, value));
             return Math.round((clamped - rangeMin) / (rangeMax - rangeMin) * SLIDER_RESOLUTION);
         }
 
-        private float sliderToValue(final int sliderPos) {
+        private float sliderToValue(int sliderPos) {
             return rangeMin + (sliderPos / (float) SLIDER_RESOLUTION) * (rangeMax - rangeMin);
         }
 
-        private static String formatValue(final float v) {
+        private static String formatValue(float v) {
             return String.format("%.4f", v);
         }
     }

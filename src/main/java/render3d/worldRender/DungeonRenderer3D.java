@@ -1,7 +1,9 @@
-// ===== render3d/DungeonRenderer3D.java =====
 package render3d.worldRender;
 
+import com.jme3.font.BitmapFont;
+import com.jme3.font.BitmapText;
 import com.jme3.material.Material;
+import com.jme3.math.Vector3f;
 import com.jme3.scene.Geometry;
 import com.jme3.scene.Mesh;
 import com.jme3.scene.VertexBuffer;
@@ -13,6 +15,7 @@ import render3d.GameApplication;
 
 public final class DungeonRenderer3D {
 
+    public static boolean renderTileNumber=false;
     private static final float TILE_SIZE    = 1f;
     private static final float WALL_HEIGHT  = 6f;
     private static final float FLOOR_HALF_H = 0.1f;
@@ -24,12 +27,19 @@ public final class DungeonRenderer3D {
     private static final String FLOOR_TEXTURE = "Textures/floor_brick.png";
     private static final String WALL_TEXTURE  = "Textures/wall_brick.png";
 
+    private static BitmapFont FONT;
+
     private DungeonRenderer3D() {}
 
     public static void renderDungeon() {
         final DungeonCell[][] grid = Main.DUNGEON.getGrid();
         final int rows = grid.length;
         final int cols = grid[0].length;
+
+        if (FONT == null) {
+            FONT = GameApplication.APP.getAssetManager()
+                    .loadFont("Interface/Fonts/Default.fnt");
+        }
 
         final Material floorMat = createTexturedMaterial(FLOOR_TEXTURE);
         final Material wallMat  = createTexturedMaterial(WALL_TEXTURE);
@@ -39,6 +49,8 @@ public final class DungeonRenderer3D {
                 if (!grid[y][x].isActive()) continue;
 
                 renderFloor(x, y, floorMat);
+                if(renderTileNumber)
+                renderTileNumber(x, y, y * cols + x);
 
                 if (y == 0 || !grid[y - 1][x].isActive())
                     renderWallFace(x, y, Direction.NORTH, wallMat);
@@ -139,7 +151,6 @@ public final class DungeonRenderer3D {
             0f, 1f, 0f,
         };
 
-        // ✅ FIXED WINDING ORDER HERE
         final short[] idx = { 0, 2, 1, 0, 3, 2 };
 
         final Mesh mesh = new Mesh();
@@ -152,6 +163,27 @@ public final class DungeonRenderer3D {
         final Geometry geo = new Geometry("Floor_" + x + "_" + y, mesh);
         geo.setMaterial(mat);
         GameApplication.APP.getRootNode().attachChild(geo);
+    }
+
+    private static void renderTileNumber(int x, int y, int number) {
+        final float cx = x * TILE_SIZE;
+        final float cz = y * TILE_SIZE;
+
+        BitmapText text = new BitmapText(FONT);
+        text.setText(String.valueOf(number));
+        text.setSize(0.3f); // adjust as needed
+        text.rotate(-1.57f, 0f, 0f); // lay flat on floor
+
+        float textWidth = text.getLineWidth();
+        float textHeight = text.getLineHeight();
+
+        text.setLocalTranslation(
+                cx - textWidth / 2f,
+                FLOOR_HALF_H * 2f + 0.05f,
+                cz + textHeight / 2f
+        );
+
+        GameApplication.APP.getRootNode().attachChild(text);
     }
 
     private static Material createTexturedMaterial(final String texturePath) {

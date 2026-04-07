@@ -69,7 +69,7 @@ public final class GameApplication extends SimpleApplication {
     @Override
     public void simpleInitApp() {
         flyCam.setEnabled(false);
-        cam.setFrustumNear(0.87f);
+        cam.setFrustumNear(0.72f);
         cam.setFov(46);
        System.out.println( "frustrum : "+cam.getFrustumNear() + "- " +cam.getFrustumFar());
        CameraDebugPanel.open(() -> cam);
