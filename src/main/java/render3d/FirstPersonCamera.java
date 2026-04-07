@@ -8,10 +8,10 @@ import main.Main;
 public final class FirstPersonCamera {
 
     private static final float ROTATE_SPEED = 2.0f;
-    private static final float PITCH_MIN    = -80f;
-    private static final float PITCH_MAX    = 80f;
-    private static final float EYE_HEIGHT   = 1.85f;
-    private static final float LOOK_DIST    = 5f;
+    private static final float PITCH_MIN = -80f;
+    private static final float PITCH_MAX = 80f;
+    private static final float EYE_HEIGHT = 1.85f;
+    private static final float LOOK_DIST = 5f;
 
     private float yaw;
     private float pitch;
@@ -19,7 +19,7 @@ public final class FirstPersonCamera {
     private Camera cam;
 
     public FirstPersonCamera() {
-        yaw   = 0f;
+        yaw = 0f;
         pitch = 0f;
     }
 
@@ -49,8 +49,8 @@ public final class FirstPersonCamera {
     }
 
     private void applyCamera() {
-        final float playerX = (Main.PLAYER.getX() ) / 32f;
-final float playerZ = (Main.PLAYER.getY() ) / 32f;
+        final float playerX = (Main.PLAYER.centerX()) / dungeon.Dungeon.TILE_SIZE;
+        final float playerZ = (Main.PLAYER.centerY()) / dungeon.Dungeon.TILE_SIZE;
 
         final Vector3f eyePos = new Vector3f(playerX, EYE_HEIGHT, playerZ);
 

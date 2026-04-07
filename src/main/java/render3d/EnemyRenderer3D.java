@@ -91,8 +91,8 @@ public final class EnemyRenderer3D {
         final float tilt = enemy.getHealth().getDeathTiltFraction() * DEATH_TILT_MAX_ANGLE;
 
         // Enemy world center
-        final float enemyWorldX = enemy.getX() / 32f + SPRITE_WIDTH  / 2f;
-        final float enemyWorldZ = enemy.getY() / 32f + SPRITE_HEIGHT / 2f;
+        final float enemyWorldX = enemy.getX() / dungeon.Dungeon.TILE_SIZE + SPRITE_WIDTH  / 2f;
+        final float enemyWorldZ = enemy.getY() / dungeon.Dungeon.TILE_SIZE + SPRITE_HEIGHT / 2f;
 
         // Player world center
         final float playerWorldX = Main.PLAYER.centerX() / 32f;

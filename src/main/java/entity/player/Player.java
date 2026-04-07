@@ -31,8 +31,8 @@ public final class Player {
     public Player(final int startX, final int startY, final int tileSize,
                   final InputController controller) {
         this.tileSize   = tileSize;
-        this.width      = tileSize*2;
-        this.height     = tileSize*2;
+        this.width      = tileSize;
+        this.height     = tileSize;
         this.x          = startX * tileSize;
         this.y          = startY * tileSize;
         this.controller = controller;

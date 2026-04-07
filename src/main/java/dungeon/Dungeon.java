@@ -7,7 +7,7 @@ import java.awt.Graphics;
 
 public final class Dungeon {
 
-    private static final int TILE_SIZE = 32;
+    public static final int TILE_SIZE = 32;
 
     private final DungeonCell[][] grid;
 
