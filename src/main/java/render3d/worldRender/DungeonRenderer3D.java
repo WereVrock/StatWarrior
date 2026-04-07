@@ -1,5 +1,5 @@
 // ===== render3d/DungeonRenderer3D.java =====
-package render3d;
+package render3d.worldRender;
 
 import com.jme3.material.Material;
 import com.jme3.scene.Geometry;
@@ -9,6 +9,7 @@ import com.jme3.texture.Texture;
 import com.jme3.util.BufferUtils;
 import dungeon.DungeonCell;
 import main.Main;
+import render3d.GameApplication;
 
 public final class DungeonRenderer3D {
 

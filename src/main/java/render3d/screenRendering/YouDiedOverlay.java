@@ -1,4 +1,4 @@
-package render3d;
+package render3d.screenRendering;
 
 import com.jme3.font.BitmapFont;
 import com.jme3.font.BitmapText;
@@ -22,6 +22,7 @@ import java.awt.geom.Path2D;
 import java.awt.image.BufferedImage;
 import java.nio.ByteBuffer;
 import java.util.Random;
+import render3d.GameApplication;
 
 public final class YouDiedOverlay {
 

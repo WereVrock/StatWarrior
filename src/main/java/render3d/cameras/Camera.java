@@ -1,4 +1,4 @@
-package render3d;
+package render3d.cameras;
 
 import entity.player.Player;
 

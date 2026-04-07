@@ -1,4 +1,4 @@
-package render3d;
+package render3d.worldRender;
 
 import com.jme3.material.Material;
 import com.jme3.material.RenderState;
@@ -13,6 +13,7 @@ import entity.enemy.EnemyManager;
 
 import java.util.ArrayList;
 import java.util.List;
+import render3d.GameApplication;
 
 public final class EnemyShadowRenderer3D {
 

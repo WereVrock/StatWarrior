@@ -1,10 +1,11 @@
 // ===== render3d/BillboardRenderer3D.java =====
-package render3d;
+package render3d.worldRender;
 
 import com.jme3.math.FastMath;
 import com.jme3.math.Quaternion;
 import com.jme3.math.Vector3f;
 import com.jme3.scene.Geometry;
+import render3d.GameApplication;
 
 public final class BillboardRenderer3D {
 

@@ -2,7 +2,7 @@
 package entity.player;
 
 import main.Main;
-import render3d.HitFlash;
+import render3d.screenRendering.HitFlash;
 
 public final class PlayerManager {
 

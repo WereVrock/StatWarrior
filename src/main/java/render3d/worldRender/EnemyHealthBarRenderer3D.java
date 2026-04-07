@@ -1,5 +1,5 @@
 // ===== render3d/EnemyHealthBarRenderer3D.java =====
-package render3d;
+package render3d.worldRender;
 
 import com.jme3.asset.AssetManager;
 import com.jme3.material.Material;
@@ -15,6 +15,7 @@ import entity.enemy.EnemyManager;
 
 import java.util.ArrayList;
 import java.util.List;
+import render3d.GameApplication;
 
 /**
  * World-space health bars floating above each enemy sprite, always facing

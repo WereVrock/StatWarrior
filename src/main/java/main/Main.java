@@ -8,8 +8,8 @@ import dungeon.Dungeon;
 import entity.enemy.EnemyManager;
 import entity.player.Player;
 import entity.player.PlayerManager;
-import render3d.Camera;
-import render3d.FirstPersonCamera;
+import render3d.cameras.Camera;
+import render3d.cameras.FirstPersonCamera;
 import render3d.GameApplication;
 
 

@@ -1,5 +1,5 @@
 // ===== render3d/PlayerHUD.java =====
-package render3d;
+package render3d.screenRendering;
 
 import com.jme3.asset.AssetManager;
 import com.jme3.material.Material;

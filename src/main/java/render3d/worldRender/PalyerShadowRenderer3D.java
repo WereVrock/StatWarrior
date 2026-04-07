@@ -1,4 +1,4 @@
-package render3d;
+package render3d.worldRender;
 
 import com.jme3.material.Material;
 import com.jme3.material.RenderState;
@@ -9,6 +9,7 @@ import com.jme3.scene.Geometry;
 import com.jme3.scene.shape.Cylinder;
 import dungeon.Dungeon;
 import main.Main;
+import render3d.GameApplication;
 
 /**
  * Renders a flat blue ellipse on the floor directly under the player.
@@ -18,7 +19,7 @@ import main.Main;
  *
  * Serves as both a collision debug tool and a gameplay position indicator.
  */
-public final class PlayerRenderer3D {
+public final class PalyerShadowRenderer3D {
 
     private static final float  FLOOR_Y        = .21f; // just above floor surface
     private static final float  SHADOW_HEIGHT  = 0.01f; // flat disc thickness
@@ -35,7 +36,7 @@ public final class PlayerRenderer3D {
 
     private static Geometry shadowGeo;
 
-    private PlayerRenderer3D() {}
+    private PalyerShadowRenderer3D() {}
 
     public static void init() {
         // Cylinder(radius, height, axisSamples, radialSamples, closed)

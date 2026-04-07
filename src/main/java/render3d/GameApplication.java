@@ -1,5 +1,17 @@
 package render3d;
 
+import render3d.screenRendering.YouDiedOverlay;
+import render3d.worldRender.EnemyRenderer3D;
+import render3d.worldRender.DungeonRenderer3D;
+import render3d.worldRender.EnemyHealthBarRenderer3D;
+import render3d.worldRender.ProjectileRenderer3D;
+import render3d.worldRender.PalyerShadowRenderer3D;
+import render3d.worldRender.EnemyShadowRenderer3D;
+import render3d.screenRendering.CooldownHUD;
+import render3d.screenRendering.PlayerHUD;
+import render3d.screenRendering.PauseMenu;
+import render3d.screenRendering.HitFlash;
+import render3d.cameras.CameraDebugPanel;
 import com.jme3.app.SimpleApplication;
 import com.jme3.system.AppSettings;
 import main.Main;
@@ -72,7 +84,7 @@ public final class GameApplication extends SimpleApplication {
         getGuiNode().detachAllChildren();
 
         DungeonRenderer3D.renderDungeon();
-        PlayerRenderer3D.init();
+        PalyerShadowRenderer3D.init();
         EnemyRenderer3D.init(Main.ENEMY_MANAGER);
         EnemyShadowRenderer3D.init(Main.ENEMY_MANAGER);
 
@@ -141,7 +153,7 @@ public final class GameApplication extends SimpleApplication {
         Main.PLAYER.update(tpf);
         Main.ENEMY_MANAGER.update(tpf);
 
-        PlayerRenderer3D.update();
+        PalyerShadowRenderer3D.update();
         EnemyRenderer3D.update(Main.ENEMY_MANAGER);
         EnemyShadowRenderer3D.update(Main.ENEMY_MANAGER);
         ProjectileRenderer3D.update(Main.ENEMY_MANAGER.getProjectileManager());

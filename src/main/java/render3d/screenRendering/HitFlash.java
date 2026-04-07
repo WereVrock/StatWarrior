@@ -1,4 +1,4 @@
-package render3d;
+package render3d.screenRendering;
 
 import com.jme3.material.Material;
 import com.jme3.material.RenderState;
@@ -6,6 +6,7 @@ import com.jme3.math.ColorRGBA;
 import com.jme3.scene.Geometry;
 import com.jme3.scene.shape.Quad;
 import com.jme3.system.AppSettings;
+import render3d.GameApplication;
 
 public final class HitFlash {
 

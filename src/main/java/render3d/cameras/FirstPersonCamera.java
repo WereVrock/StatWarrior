@@ -1,4 +1,4 @@
-package render3d;
+package render3d.cameras;
 
 import com.jme3.math.FastMath;
 import com.jme3.math.Vector3f;
