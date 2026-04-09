@@ -19,7 +19,7 @@ import render3d.GameApplication;
  *
  * Serves as both a collision debug tool and a gameplay position indicator.
  */
-public final class PalyerShadowRenderer3D {
+public final class PlayerShadowRenderer3D {
 
     private static final float  FLOOR_Y        = .21f; // just above floor surface
     private static final float  SHADOW_HEIGHT  = 0.01f; // flat disc thickness
@@ -36,7 +36,7 @@ public final class PalyerShadowRenderer3D {
 
     private static Geometry shadowGeo;
 
-    private PalyerShadowRenderer3D() {}
+    private PlayerShadowRenderer3D() {}
 
     public static void init() {
         // Cylinder(radius, height, axisSamples, radialSamples, closed)

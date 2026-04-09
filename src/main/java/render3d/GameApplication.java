@@ -5,7 +5,7 @@ import render3d.worldRender.EnemyRenderer3D;
 import render3d.worldRender.DungeonRenderer3D;
 import render3d.worldRender.EnemyHealthBarRenderer3D;
 import render3d.worldRender.ProjectileRenderer3D;
-import render3d.worldRender.PalyerShadowRenderer3D;
+import render3d.worldRender.PlayerShadowRenderer3D;
 import render3d.worldRender.EnemyShadowRenderer3D;
 import render3d.screenRendering.CooldownHUD;
 import render3d.screenRendering.PlayerHUD;
@@ -84,7 +84,7 @@ public final class GameApplication extends SimpleApplication {
         getGuiNode().detachAllChildren();
 
         DungeonRenderer3D.renderDungeon();
-        PalyerShadowRenderer3D.init();
+        PlayerShadowRenderer3D.init();
         EnemyRenderer3D.init(Main.ENEMY_MANAGER);
         EnemyShadowRenderer3D.init(Main.ENEMY_MANAGER);
 
@@ -153,7 +153,7 @@ public final class GameApplication extends SimpleApplication {
         Main.PLAYER.update(tpf);
         Main.ENEMY_MANAGER.update(tpf);
 
-        PalyerShadowRenderer3D.update();
+        PlayerShadowRenderer3D.update();
         EnemyRenderer3D.update(Main.ENEMY_MANAGER);
         EnemyShadowRenderer3D.update(Main.ENEMY_MANAGER);
         ProjectileRenderer3D.update(Main.ENEMY_MANAGER.getProjectileManager());
