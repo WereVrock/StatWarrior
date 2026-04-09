@@ -29,7 +29,7 @@ public final class PalyerShadowRenderer3D {
     // So collision diameter in world units = (tileSize*2) / TILE_SIZE = 2.0
     private static final float  COLLISION_RADIUS_WORLD = (Dungeon.TILE_SIZE * 2f) / Dungeon.TILE_SIZE / 2f; // = 1.0
 
-    private static final ColorRGBA SHADOW_COLOR = new ColorRGBA(0.1f, 0.3f, 1.0f, 0.6f);
+    private static final ColorRGBA SHADOW_COLOR = new ColorRGBA(0f, 0f, 0f, 0.6f);
 
     // Cylinder is oriented along Y by default; rotate it flat onto the XZ plane
     private static final Quaternion FLAT_ROTATION = buildFlatRotation();
@@ -56,6 +56,8 @@ public final class PalyerShadowRenderer3D {
         mat.setColor("Color", SHADOW_COLOR);
         mat.getAdditionalRenderState().setBlendMode(RenderState.BlendMode.Alpha);
         shadowGeo.setMaterial(mat);
+        shadowGeo.setQueueBucket(com.jme3.renderer.queue.RenderQueue.Bucket.Transparent);
+        mat.getAdditionalRenderState().setDepthWrite(false);
         shadowGeo.setLocalRotation(FLAT_ROTATION);
 
         GameApplication.APP.getRootNode().attachChild(shadowGeo);
